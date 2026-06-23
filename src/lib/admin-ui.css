@@ -1,0 +1,252 @@
+/* Gaya bersama untuk semua modul CRUD admin. */
+:root {
+	--nb-navy: #0a1f44;
+	--nb-navy-d: #08152e;
+	--nb-accent: #d4af37;
+	--nb-accent-l: #e7c76a;
+}
+.adm-head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 24px;
+	flex-wrap: wrap;
+}
+.adm-title {
+	font-family: 'Playfair Display', Georgia, serif;
+	font-weight: 800;
+	font-size: 30px;
+	color: #0a1f44;
+	margin: 0;
+}
+.adm-sub {
+	color: #7a8499;
+	margin: 6px 0 0;
+	font-size: 14px;
+}
+
+.adm-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 11px 20px;
+	border-radius: 8px;
+	border: none;
+	font-size: 13.5px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+	text-decoration: none;
+}
+.adm-btn-gold {
+	background: linear-gradient(135deg, #e7c76a, #d4af37);
+	color: #08152e;
+}
+.adm-btn-gold:hover {
+	box-shadow: 0 8px 20px rgba(212, 175, 55, 0.35);
+}
+.adm-btn-ghost {
+	background: #fff;
+	border: 1px solid #e2e5ec;
+	color: #475066;
+}
+.adm-btn-ghost:hover {
+	border-color: #d4af37;
+	color: #0a1f44;
+}
+.adm-btn-danger {
+	background: #fff;
+	border: 1px solid #f1c5bf;
+	color: #b3261e;
+}
+.adm-btn-danger:hover {
+	background: #fdecea;
+}
+.adm-btn-sm {
+	padding: 7px 13px;
+	font-size: 12.5px;
+}
+
+.adm-card {
+	background: #fff;
+	border: 1px solid #e7e9ef;
+	border-radius: 14px;
+	overflow: hidden;
+}
+
+table.adm-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+.adm-table th {
+	text-align: left;
+	padding: 13px 18px;
+	font-size: 11px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #9aa3b5;
+	font-weight: 600;
+	border-bottom: 1px solid #eceef3;
+	background: #f8f9fb;
+}
+.adm-table td {
+	padding: 15px 18px;
+	border-bottom: 1px solid #f3f4f7;
+	color: #475066;
+	font-size: 13.5px;
+	vertical-align: middle;
+}
+.adm-table tbody tr:last-child td {
+	border-bottom: none;
+}
+/* Hover baris berwarna keemasan halus (selaras tema). */
+.adm-table tbody tr {
+	transition: background 0.2s;
+}
+.adm-table tbody tr:hover td {
+	background: #faf8f1;
+}
+
+/* Avatar/monogram bulat untuk kolom nama. */
+.adm-mono {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: rgba(212, 175, 55, 0.16);
+	color: #9c7a1e;
+	font-weight: 700;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+}
+
+/* Tombol aksi berbentuk ikon kotak (Edit/Hapus/dll). */
+.adm-icon-btn {
+	width: 34px;
+	height: 34px;
+	border-radius: 9px;
+	border: 1px solid #e2e5ec;
+	background: #fff;
+	color: #6b7794;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+.adm-icon-btn:hover {
+	border-color: #d4af37;
+	color: #d4af37;
+	background: #faf8f1;
+}
+.adm-icon-btn.danger:hover {
+	border-color: #d64545;
+	color: #d64545;
+	background: #fdecea;
+}
+
+.adm-badge {
+	display: inline-block;
+	padding: 5px 11px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 600;
+}
+.adm-badge-on {
+	background: #e7f6ec;
+	color: #1a7f43;
+}
+.adm-badge-off {
+	background: #f0f1f4;
+	color: #8a93a7;
+}
+
+.adm-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+/* Form */
+.adm-form {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 18px;
+	max-width: 720px;
+}
+.adm-field {
+	display: flex;
+	flex-direction: column;
+}
+.adm-field.full {
+	grid-column: 1 / -1;
+}
+.adm-field label {
+	font-size: 12px;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: #9aa3b5;
+	margin-bottom: 8px;
+	font-weight: 600;
+}
+.adm-field input,
+.adm-field select,
+.adm-field textarea {
+	padding: 12px 14px;
+	border: 1px solid #e2e5ec;
+	border-radius: 8px;
+	font-size: 14.5px;
+	color: #0a1f44;
+	outline: none;
+	background: #fff;
+	transition: border-color 0.2s;
+	font-family: inherit;
+}
+.adm-field input:focus,
+.adm-field select:focus,
+.adm-field textarea:focus {
+	border-color: #d4af37;
+}
+.adm-check {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.adm-check input {
+	width: 18px;
+	height: 18px;
+	accent-color: #d4af37;
+}
+.adm-form-actions {
+	grid-column: 1 / -1;
+	display: flex;
+	gap: 12px;
+	margin-top: 6px;
+}
+.adm-err {
+	grid-column: 1 / -1;
+	background: #fdecea;
+	border: 1px solid #f5c2bd;
+	color: #b3261e;
+	font-size: 13.5px;
+	border-radius: 8px;
+	padding: 10px 14px;
+}
+.adm-empty {
+	padding: 48px 24px;
+	text-align: center;
+	color: #9aa3b5;
+	font-size: 14.5px;
+}
+.adm-thumb {
+	width: 56px;
+	height: 40px;
+	object-fit: cover;
+	border-radius: 4px;
+	background: #f0f1f4;
+	display: block;
+}

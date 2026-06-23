@@ -1,0 +1,54 @@
+// Konfigurasi PM2 untuk Noblesse Property (SvelteKit adapter-node).
+// File .cjs (CommonJS) karena package.json memakai "type":"module".
+//
+// Pakai:
+//   pm2 start ecosystem.config.cjs      # jalankan
+//   pm2 restart ecosystem.config.cjs    # restart setelah deploy ulang
+//   pm2 stop noblesse                   # hentikan
+//   pm2 logs noblesse                   # lihat log
+//   pm2 save && pm2 startup             # auto-start saat VPS reboot
+//
+// Variabel rahasia (DATABASE_URL, SESSION_SECRET, ORIGIN) dibaca dari file
+// .env di folder yang sama via flag --env-file pada Node — jadi tidak perlu
+// menaruh rahasia di file config ini.
+
+module.exports = {
+	apps: [
+		{
+			name: 'noblesse',
+			// Jalankan server hasil build adapter-node, memuat .env.
+			script: 'build/index.js',
+			node_args: '--env-file=.env',
+
+			// 1 instance (mode fork). Catatan: rate-limit & sesi aman di mode ini.
+			// Jangan pakai cluster >1 sebelum memindah rate-limit ke Redis.
+			instances: 1,
+			exec_mode: 'fork',
+
+			// Restart otomatis bila crash; jeda agar tidak loop terlalu cepat.
+			autorestart: true,
+			restart_delay: 3000,
+			max_restarts: 10,
+
+			// Restart bila pemakaian memori melewati batas (kebocoran tak terduga).
+			max_memory_restart: '400M',
+
+			// Default lingkungan. PORT/HOST dipakai adapter-node.
+			// ORIGIN sebaiknya diisi di .env (URL https publik) untuk CSRF/cookie.
+			env: {
+				NODE_ENV: 'production',
+				PORT: 3000,
+				HOST: '127.0.0.1'
+			},
+
+			// Log gabungan dengan timestamp.
+			time: true,
+			merge_logs: true,
+			out_file: 'logs/out.log',
+			error_file: 'logs/error.log',
+
+			// Jangan auto-restart saat file berubah (deploy dikontrol manual).
+			watch: false
+		}
+	]
+};
