@@ -23,8 +23,8 @@
 	let scrolled = $state(false);
 	let slide = $state(0);
 	let planType = $state(0);
-	let price = $state(numSetting('kpr_default_price', 2800)); // in juta
-	let dpPct = $state(numSetting('kpr_default_dp', 20));
+	let price = $state(numSetting('kpr_default_price', 500)); // harga properti (juta)
+	let dp = $state(numSetting('kpr_default_dp', 100)); // uang muka (juta, nominal)
 	let tenor = $state(numSetting('kpr_default_tenor', 15));
 	let rate = $state(numSetting('kpr_default_rate', 8.5));
 	let sent = $state(false);
@@ -46,8 +46,11 @@
 
 	// ---------- derived: KPR ----------
 	const idr = (v: number) => 'Rp ' + Math.round(v).toLocaleString('id-ID');
-	const principal = $derived(price * 1e6 * (1 - dpPct / 100));
-	const dpAmt = $derived(price * 1e6 * (dpPct / 100));
+	// Uang muka nominal (juta), tidak boleh melebihi harga properti.
+	const dpEff = $derived(Math.min(dp, price));
+	const dpAmt = $derived(dpEff * 1e6);
+	const dpPct = $derived(price > 0 ? Math.round((dpEff / price) * 100) : 0);
+	const principal = $derived((price - dpEff) * 1e6);
 	const monthly = $derived.by(() => {
 		const r = rate / 100 / 12;
 		const n = tenor * 12;
@@ -60,7 +63,7 @@
 			? 'Rp ' + (price / 1000).toFixed(1).replace('.', ',') + ' Miliar'
 			: 'Rp ' + price + ' Juta'
 	);
-	const dpLabel = $derived(idr(dpAmt) + ' (' + dpPct + '%)');
+	const dpLabel = $derived('Rp ' + dpEff + ' Juta (' + dpPct + '%)');
 	const tenorLabel = $derived(tenor + ' Tahun');
 	const rateLabel = $derived(rate.toFixed(1).replace('.', ',') + '% / thn');
 	const monthlyLabel = $derived(idr(monthly));
@@ -301,9 +304,9 @@
 
 	type Field = { label: string; val: string; min: number; max: number; step: number; get: () => number; set: (v: number) => void; fs: string; mb: boolean };
 	const kprFields = $derived<Field[]>([
-		{ label: 'Harga Properti', val: priceLabel, min: 800, max: 8000, step: 100, get: () => price, set: (v) => (price = v), fs: '22px', mb: true },
-		{ label: 'Uang Muka (DP)', val: dpLabel, min: 10, max: 50, step: 5, get: () => dpPct, set: (v) => (dpPct = v), fs: '18px', mb: true },
-		{ label: 'Jangka Waktu', val: tenorLabel, min: 5, max: 25, step: 1, get: () => tenor, set: (v) => (tenor = v), fs: '18px', mb: true },
+		{ label: 'Harga Properti', val: priceLabel, min: 100, max: 900, step: 10, get: () => price, set: (v) => (price = v), fs: '22px', mb: true },
+		{ label: 'Uang Muka (DP)', val: dpLabel, min: 0, max: 150, step: 5, get: () => dp, set: (v) => (dp = v), fs: '18px', mb: true },
+		{ label: 'Jangka Waktu', val: tenorLabel, min: 5, max: 20, step: 1, get: () => tenor, set: (v) => (tenor = v), fs: '18px', mb: true },
 		{ label: 'Suku Bunga', val: rateLabel, min: 5, max: 14, step: 0.5, get: () => rate, set: (v) => (rate = v), fs: '18px', mb: false }
 	]);
 

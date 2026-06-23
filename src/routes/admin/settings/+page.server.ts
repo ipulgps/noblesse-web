@@ -17,7 +17,7 @@ const FIELDS: { key: string; label: string; type: 'text' | 'textarea' }[] = [
 	{ key: 'maps_url', label: 'URL Google Maps', type: 'text' },
 	{ key: 'location_marker_label', label: 'Label Penanda Peta', type: 'text' },
 	{ key: 'kpr_default_price', label: 'KPR — Harga default (juta)', type: 'text' },
-	{ key: 'kpr_default_dp', label: 'KPR — DP default (%)', type: 'text' },
+	{ key: 'kpr_default_dp', label: 'KPR — DP default (juta)', type: 'text' },
 	{ key: 'kpr_default_tenor', label: 'KPR — Tenor default (tahun)', type: 'text' },
 	{ key: 'kpr_default_rate', label: 'KPR — Bunga default (%)', type: 'text' }
 ];

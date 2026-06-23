@@ -161,8 +161,8 @@ const settings = {
 	instagram_handle: '@noblesseproperty',
 	maps_url: 'https://www.google.com/maps',
 	location_marker_label: 'NOBLESSE GRAND AVENUE',
-	kpr_default_price: '2800',
-	kpr_default_dp: '20',
+	kpr_default_price: '500',
+	kpr_default_dp: '100',
 	kpr_default_tenor: '15',
 	kpr_default_rate: '8.5'
 };
