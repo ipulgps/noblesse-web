@@ -10,6 +10,7 @@ node_modules
 
 # PM2 logs
 /logs
+dev.log
 
 # OS
 .DS_Store
