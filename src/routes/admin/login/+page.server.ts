@@ -1,6 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { dev } from '$app/environment';
-import { authenticate, createSession, SESSION_COOKIE } from '$lib/server/auth';
+import { authenticate, createSession, SESSION_COOKIE, cookieSecure } from '$lib/server/auth';
 import { rateLimit } from '$lib/server/rate-limit';
 import type { Actions } from './$types';
 
@@ -36,7 +35,7 @@ export const actions: Actions = {
 			path: '/',
 			httpOnly: true,
 			sameSite: 'lax',
-			secure: !dev,
+			secure: cookieSecure,
 			expires: expiresAt
 		});
 

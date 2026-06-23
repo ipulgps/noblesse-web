@@ -4,8 +4,17 @@ import { eq, lt } from 'drizzle-orm';
 import { db } from './db';
 import { adminUsers, adminSessions } from './schema';
 
+import { dev } from '$app/environment';
+import { env } from '$env/dynamic/private';
+
 export const SESSION_COOKIE = 'nb_session';
 const SESSION_DAYS = 7;
+
+// Apakah cookie sesi memakai flag Secure (hanya terkirim via HTTPS).
+// Default mengikuti produksi (true). Saat masih akses lewat http (mis. via IP
+// sebelum pasang HTTPS), set COOKIE_SECURE=false di .env agar cookie tersimpan.
+// WAJIB kembalikan ke true (hapus override) setelah HTTPS aktif.
+export const cookieSecure = env.COOKIE_SECURE === 'false' ? false : !dev;
 
 // Parameter argon2 yang aman & masuk akal untuk server biasa.
 const argonOpts = { memoryCost: 19456, timeCost: 2, parallelism: 1 };
