@@ -10,10 +10,9 @@ module.exports = {
 			restart_delay: 3000,
 			max_restarts: 10,
 			max_memory_restart: '400M',
-			// Semua variabel (termasuk NODE_ENV) dibaca dari .env via --env-file
-			// agar hanya ada satu sumber kebenaran. Jangan set env di sini supaya
-			// tidak menimpa .env (PM2 env di-inject lebih dulu & tidak ditimpa
-			// oleh --env-file Node).
+			env: {
+				NODE_ENV: 'development'
+			},
 			time: true,
 			merge_logs: true,
 			out_file: 'logs/out.log',
