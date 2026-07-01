@@ -47,7 +47,9 @@
 
 	<div class="iu-row">
 		<div class="iu-preview" class:filled={!!path}>
-			{#if path}
+			{#if uploading}
+				<span class="iu-spinner"></span>
+			{:else if path}
 				<img src={path} alt="" />
 			{:else}
 				<span class="iu-ph">Belum ada gambar</span>
@@ -55,6 +57,7 @@
 		</div>
 		<div class="iu-actions">
 			<button type="button" class="iu-btn" onclick={() => fileInput.click()} disabled={uploading}>
+				{#if uploading}<span class="iu-btn-spinner"></span>{/if}
 				{uploading ? 'Mengunggah…' : path ? 'Ganti' : 'Unggah'}
 			</button>
 			{#if path}
@@ -160,5 +163,30 @@
 		color: #9aa3b5;
 		margin-top: 8px;
 		word-break: break-all;
+	}
+
+	.iu-spinner {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		border: 2.5px solid #e2e5ec;
+		border-top-color: #d4af37;
+		animation: iu-spin 0.7s linear infinite;
+	}
+	.iu-btn-spinner {
+		display: inline-block;
+		width: 12px;
+		height: 12px;
+		margin-right: 6px;
+		vertical-align: -1px;
+		border-radius: 50%;
+		border: 2px solid #d4d8e0;
+		border-top-color: #475066;
+		animation: iu-spin 0.7s linear infinite;
+	}
+	@keyframes iu-spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
