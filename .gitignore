@@ -25,3 +25,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Upload admin (file user, bukan source code)
+/static/uploads/*
+!/static/uploads/.gitkeep
