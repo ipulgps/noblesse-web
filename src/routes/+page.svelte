@@ -39,6 +39,33 @@
 	let submitting = $state(false);
 	let formError = $state('');
 
+	// ---------- form klaim voucher ----------
+	let voucherCode = $state('');
+	let claiming = $state(false);
+	let claimError = $state('');
+	let claimedImagePath = $state('');
+
+	async function submitVoucherClaim(e: SubmitEvent) {
+		e.preventDefault();
+		if (claiming) return;
+		claimError = '';
+		claiming = true;
+		try {
+			const res = await fetch('/api/voucher/claim', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ code: voucherCode.trim() })
+			});
+			const body = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(body.message || 'Kode voucher tidak valid.');
+			claimedImagePath = body.imagePath;
+		} catch (err) {
+			claimError = err instanceof Error ? err.message : 'Kode voucher tidak valid.';
+		} finally {
+			claiming = false;
+		}
+	}
+
 	let heroBg = $state<HTMLElement | null>(null);
 	let heroContent = $state<HTMLElement | null>(null);
 
@@ -91,7 +118,8 @@
 		{ href: '#gallery', label: 'Galeri' },
 		{ href: '#facilities', label: 'Fasilitas' },
 		{ href: '#location', label: 'Lokasi' },
-		{ href: '#kpr', label: 'Simulasi KPR' }
+		{ href: '#kpr', label: 'Simulasi KPR' },
+		{ href: '#klaim-voucher', label: 'Klaim Voucher' }
 	];
 
 	const slideCount = () => data.testimonials.length || 1;
@@ -219,6 +247,10 @@
 		autoTimer = setInterval(() => {
 			if (!document.hidden) slide = (slide + 1) % slideCount();
 		}, 6500);
+
+		// Auto-isi kode voucher jika datang dari scan QR (?voucher=KODE#klaim-voucher).
+		const qVoucher = new URLSearchParams(window.location.search).get('voucher');
+		if (qVoucher) voucherCode = qVoucher.trim();
 
 		return () => {
 			window.removeEventListener('resize', onResize);
@@ -860,6 +892,64 @@
 						<span style="padding:11px 26px;background:#fff;border:1px solid rgba(10,31,68,.08);border-radius:2px;font-family:var(--nb-head);font-weight:700;font-size:18px;color:var(--nb-navy);letter-spacing:.02em;">{bank}</span>
 					{/each}
 				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ================= KLAIM VOUCHER ================= -->
+	<section id="klaim-voucher" style="background:#ffffff;padding:clamp(80px,10vw,140px) clamp(20px,5vw,56px);">
+		<div style="max-width:640px;margin:0 auto;text-align:center;">
+			<div use:reveal style="display:inline-flex;align-items:center;gap:14px;margin-bottom:20px;">
+				<span style="width:34px;height:1px;background:var(--nb-accent);"></span>
+				<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.34em;color:var(--nb-accent);font-weight:600;">VOUCHER DIGITAL</span>
+				<span style="width:34px;height:1px;background:var(--nb-accent);"></span>
+			</div>
+			<h2 use:reveal={80} style="font-family:var(--nb-head);font-weight:800;font-size:clamp(30px,4.2vw,52px);line-height:1.08;color:var(--nb-navy);margin:0 0 20px;">Klaim Voucher Anda</h2>
+			<p use:reveal={120} style="color:#7a8499;font-size:15.5px;line-height:1.8;margin:0 0 40px;">Masukkan kode voucher 12 digit yang Anda terima untuk mendapatkan gambar voucher digital.</p>
+
+			<div use:reveal={160} style="background:#F8F8F8;border-radius:2px;padding:clamp(30px,3.5vw,48px);text-align:left;">
+				{#if !claimedImagePath}
+					<form onsubmit={submitVoucherClaim} style="display:flex;flex-direction:column;gap:18px;">
+						<div>
+							<label for="nb-voucher" style="display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#9aa3b5;margin-bottom:8px;">Kode Voucher</label>
+							<input
+								id="nb-voucher"
+								type="text"
+								inputmode="numeric"
+								pattern={'[0-9]{12}'}
+								maxlength="12"
+								required
+								placeholder="12 digit angka"
+								bind:value={voucherCode}
+								class="nb-input"
+								style="width:100%;padding:14px 16px;border:1px solid #e2e0d9;border-radius:2px;font-size:15px;color:#0A1F44;outline:none;transition:border-color .3s;letter-spacing:.1em;text-align:center;"
+							/>
+						</div>
+						{#if claimError}
+							<div style="color:#b3261e;font-size:13.5px;background:#fdecea;border:1px solid #f5c2bd;border-radius:2px;padding:10px 14px;">{claimError}</div>
+						{/if}
+						<button type="submit" disabled={claiming} class="btn-gold" style="padding:17px;background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;border:none;border-radius:2px;font-size:13.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .35s;opacity:{claiming ? '.7' : '1'};">{claiming ? 'Memeriksa…' : 'Klaim Voucher'}</button>
+					</form>
+				{:else}
+					<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;">
+						<img src={claimedImagePath} alt="Voucher digital" style="max-width:100%;border-radius:4px;box-shadow:0 20px 50px rgba(0,0,0,.15);" />
+						<a
+							href={claimedImagePath}
+							download
+							class="btn-gold"
+							style="display:inline-block;padding:15px 32px;background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;border-radius:2px;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;transition:all .3s;"
+							>Unduh Gambar</a
+						>
+						<button
+							onclick={() => {
+								claimedImagePath = '';
+								voucherCode = '';
+							}}
+							style="background:none;border:none;color:var(--nb-accent);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-bottom:1px solid var(--nb-accent);padding-bottom:3px;"
+							>Klaim Kode Lain</button
+						>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</section>

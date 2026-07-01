@@ -16,6 +16,8 @@
 		{ href: '/admin/locations', label: 'Lokasi' },
 		{ href: '/admin/testimonials', label: 'Testimoni' },
 		{ href: '/admin/stats', label: 'Statistik' },
+		{ href: '/admin/voucher-templates', label: 'Template Voucher' },
+		{ href: '/admin/vouchers', label: 'Voucher' },
 		{ href: '/admin/leads', label: 'Prospek' },
 		{ href: '/admin/settings', label: 'Pengaturan' }
 	];

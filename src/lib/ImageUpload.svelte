@@ -6,12 +6,14 @@
 		name,
 		value = '',
 		label = 'Gambar',
-		onuploading
+		onuploading,
+		onpath
 	}: {
 		name: string;
 		value?: string;
 		label?: string;
 		onuploading?: (uploading: boolean) => void;
+		onpath?: (path: string) => void;
 	} = $props();
 
 	// Komponen di-remount lewat {#key} saat target edit berganti, jadi cukup
@@ -35,6 +37,7 @@
 			const body = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(body.message || 'Gagal mengunggah.');
 			path = body.path;
+			onpath?.(path);
 		} catch (e2) {
 			err = e2 instanceof Error ? e2.message : 'Gagal mengunggah.';
 		} finally {
@@ -46,6 +49,7 @@
 
 	function clear() {
 		path = '';
+		onpath?.(path);
 	}
 </script>
 

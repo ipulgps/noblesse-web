@@ -157,3 +157,34 @@ CREATE TABLE IF NOT EXISTS leads (
   status          ENUM('baru','dihubungi','closing','batal') NOT NULL DEFAULT 'baru',
   created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== TEMPLATE VOUCHER DIGITAL ==========
+CREATE TABLE IF NOT EXISTS voucher_templates (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  name         VARCHAR(120) NOT NULL,
+  image_path   VARCHAR(255) NOT NULL,
+  qr_x         INT NOT NULL DEFAULT 0,
+  qr_y         INT NOT NULL DEFAULT 0,
+  qr_size      INT NOT NULL DEFAULT 200,
+  code_x       INT NOT NULL DEFAULT 0,
+  code_y       INT NOT NULL DEFAULT 0,
+  font_size    INT NOT NULL DEFAULT 32,
+  text_color   VARCHAR(20) NOT NULL DEFAULT '#000000',
+  is_active    TINYINT(1) NOT NULL DEFAULT 1,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== VOUCHER ==========
+CREATE TABLE IF NOT EXISTS vouchers (
+  id                   INT AUTO_INCREMENT PRIMARY KEY,
+  code                 VARCHAR(12) NOT NULL UNIQUE,
+  template_id          INT NOT NULL,
+  status               ENUM('belum_aktivasi','aktif','tidak_aktif','sudah_digunakan')
+                         NOT NULL DEFAULT 'belum_aktivasi',
+  generated_image_path VARCHAR(255) NULL,
+  claimed_at           DATETIME NULL,
+  created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (template_id) REFERENCES voucher_templates(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

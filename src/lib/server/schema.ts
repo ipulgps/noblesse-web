@@ -171,3 +171,38 @@ export const leads = mysqlTable('leads', {
 		.default('baru'),
 	createdAt
 });
+
+// ========== TEMPLATE VOUCHER DIGITAL ==========
+export const voucherTemplates = mysqlTable('voucher_templates', {
+	id: int('id').autoincrement().primaryKey(),
+	name: varchar('name', { length: 120 }).notNull(),
+	imagePath: varchar('image_path', { length: 255 }).notNull(),
+	// Posisi & ukuran QR code di atas gambar template (px, dari kiri-atas).
+	qrX: int('qr_x').notNull().default(0),
+	qrY: int('qr_y').notNull().default(0),
+	qrSize: int('qr_size').notNull().default(200),
+	// Posisi & gaya teks nomor voucher di atas gambar template.
+	codeX: int('code_x').notNull().default(0),
+	codeY: int('code_y').notNull().default(0),
+	fontSize: int('font_size').notNull().default(32),
+	textColor: varchar('text_color', { length: 20 }).notNull().default('#000000'),
+	isActive: tinyint('is_active').notNull().default(1),
+	createdAt,
+	updatedAt
+});
+
+// ========== VOUCHER ==========
+export const vouchers = mysqlTable('vouchers', {
+	id: int('id').autoincrement().primaryKey(),
+	code: varchar('code', { length: 12 }).notNull().unique(),
+	templateId: int('template_id').notNull(),
+	status: mysqlEnum('status', ['belum_aktivasi', 'aktif', 'tidak_aktif', 'sudah_digunakan'])
+		.notNull()
+		.default('belum_aktivasi'),
+	// Path gambar hasil generate (QR + nomor di-composite ke template) — dibuat
+	// sekali saat klaim pertama, lalu dipakai ulang untuk klaim/unduh berikutnya.
+	generatedImagePath: varchar('generated_image_path', { length: 255 }),
+	claimedAt: datetime('claimed_at'),
+	createdAt,
+	updatedAt
+});
