@@ -715,12 +715,12 @@
 				<h2 use:reveal={80} style="font-family:var(--nb-head);font-weight:800;font-size:clamp(30px,4.2vw,56px);line-height:1.08;color:var(--nb-navy);margin:0;">Pilih Tipe Hunian Anda</h2>
 			</div>
 			<div use:reveal style="max-width:440px;margin:0 auto 44px;display:flex;gap:8px;background:#08152E;padding:8px;border-radius:2px;">
-				{#each ['Tipe 45', 'Tipe 60', 'Tipe 90'] as label, i}
+				{#each plans as p, i}
 					<button
 						onclick={() => (planType = i)}
 						style="flex:1;padding:15px 8px;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;transition:all .35s ease;border-radius:2px;{planType === i
 							? 'background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;box-shadow:0 10px 30px rgba(212,175,55,.3);'
-							: 'background:transparent;color:#8b97b3;'}">{label}</button
+							: 'background:transparent;color:#8b97b3;'}">{p.code}</button
 					>
 				{/each}
 			</div>
