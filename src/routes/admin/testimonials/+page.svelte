@@ -25,6 +25,7 @@
 	};
 	let editing = $state<typeof blank | null>(null);
 	let saving = $state(false);
+	let uploadingImg = $state(false);
 
 	const openCreate = () => (editing = { ...blank, sortOrder: data.testimonials.length });
 	const openEdit = (t: Row) =>
@@ -92,14 +93,19 @@
 			</div>
 			<div class="adm-field full">
 				{#key editing.id}
-					<ImageUpload name="photoPath" value={editing.photoPath} label="Foto" />
+					<ImageUpload
+					name="photoPath"
+					value={editing.photoPath}
+					label="Foto"
+					onuploading={(v) => (uploadingImg = v)}
+				/>
 				{/key}
 			</div>
 			<div class="adm-field full">
 				<label class="adm-check"><input type="checkbox" name="isActive" checked={editing.isActive === 1} /><span>Aktif</span></label>
 			</div>
 			<div class="adm-form-actions">
-				<button type="submit" class="adm-btn adm-btn-gold" disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
+				<button type="submit" class="adm-btn adm-btn-gold" disabled={saving || uploadingImg}>{saving ? 'Menyimpan…' : uploadingImg ? 'Menunggu unggah…' : 'Simpan'}</button>
 				<button type="button" class="adm-btn adm-btn-ghost" onclick={() => (editing = null)}>Batal</button>
 			</div>
 		</form>

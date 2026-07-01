@@ -21,6 +21,7 @@
 
 	let editing = $state<typeof blank | null>(null);
 	let saving = $state(false);
+	let uploadingImg = $state(false);
 
 	function openCreate() {
 		editing = { ...blank, sortOrder: data.projects.length };
@@ -106,7 +107,12 @@
 			</div>
 			<div class="adm-field full">
 				{#key editing.id}
-					<ImageUpload name="imagePath" value={editing.imagePath} label="Foto Proyek" />
+					<ImageUpload
+					name="imagePath"
+					value={editing.imagePath}
+					label="Foto Proyek"
+					onuploading={(v) => (uploadingImg = v)}
+				/>
 				{/key}
 			</div>
 			<div class="adm-field full">
@@ -121,8 +127,8 @@
 			</div>
 
 			<div class="adm-form-actions">
-				<button type="submit" class="adm-btn adm-btn-gold" disabled={saving}>
-					{saving ? 'Menyimpan…' : 'Simpan'}
+				<button type="submit" class="adm-btn adm-btn-gold" disabled={saving || uploadingImg}>
+					{saving ? 'Menyimpan…' : uploadingImg ? 'Menunggu unggah…' : 'Simpan'}
 				</button>
 				<button type="button" class="adm-btn adm-btn-ghost" onclick={close}>Batal</button>
 			</div>

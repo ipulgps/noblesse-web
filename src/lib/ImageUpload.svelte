@@ -5,8 +5,14 @@
 	let {
 		name,
 		value = '',
-		label = 'Gambar'
-	}: { name: string; value?: string; label?: string } = $props();
+		label = 'Gambar',
+		onuploading
+	}: {
+		name: string;
+		value?: string;
+		label?: string;
+		onuploading?: (uploading: boolean) => void;
+	} = $props();
 
 	// Komponen di-remount lewat {#key} saat target edit berganti, jadi cukup
 	// menangkap nilai awal di sini (untrack agar tidak ada peringatan reaktif).
@@ -21,6 +27,7 @@
 		if (!file) return;
 		err = '';
 		uploading = true;
+		onuploading?.(true);
 		try {
 			const fd = new FormData();
 			fd.append('file', file);
@@ -32,6 +39,7 @@
 			err = e2 instanceof Error ? e2.message : 'Gagal mengunggah.';
 		} finally {
 			uploading = false;
+			onuploading?.(false);
 			input.value = '';
 		}
 	}
