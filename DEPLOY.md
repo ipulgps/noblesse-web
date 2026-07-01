@@ -5,7 +5,7 @@ Aplikasi: **SvelteKit (adapter-node) + MySQL**. Panduan ini memakai VPS Linux
 proses Node tetap hidup, dan **Let's Encrypt** untuk HTTPS.
 
 Asumsi: Anda punya VPS dengan akses `root`/sudo, dan sebuah domain
-(mis. `noblesse.example.com`) yang sudah diarahkan (A record) ke IP VPS.
+(mis. `noblessegroup.id`) yang sudah diarahkan (A record) ke IP VPS.
 
 ---
 
@@ -103,7 +103,7 @@ Isi (sesuaikan):
 ```
 DATABASE_URL="mysql://noblesse:GANTI_PASSWORD_KUAT@127.0.0.1:3306/noblesse"
 SESSION_SECRET="STRING_ACAK_SANGAT_PANJANG_DAN_UNIK"
-ORIGIN="https://noblesse.example.com"
+ORIGIN="https://noblessegroup.id"
 PORT=3000
 ```
 
@@ -200,7 +200,7 @@ Isi:
 ```nginx
 server {
     listen 80;
-    server_name noblesse.example.com;
+    server_name noblessegroup.id;
 
     client_max_body_size 6M;   # cukup untuk upload gambar (maks 5MB)
 
@@ -225,7 +225,7 @@ sudo nginx -t          # tes konfigurasi
 sudo systemctl reload nginx
 ```
 
-Sekarang `http://noblesse.example.com` sudah bisa diakses.
+Sekarang `http://noblessegroup.id` sudah bisa diakses.
 
 ---
 
@@ -233,7 +233,7 @@ Sekarang `http://noblesse.example.com` sudah bisa diakses.
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d noblesse.example.com
+sudo certbot --nginx -d noblessegroup.id
 ```
 
 Certbot mengubah Nginx ke HTTPS otomatis & memasang auto-renew. Pastikan
@@ -256,8 +256,8 @@ sudo ufw status
 
 ## ✅ Selesai
 
-Buka `https://noblesse.example.com` (situs) dan
-`https://noblesse.example.com/admin/login` (admin).
+Buka `https://noblessegroup.id` (situs) dan
+`https://noblessegroup.id/admin/login` (admin).
 
 ---
 
