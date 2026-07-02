@@ -32,14 +32,16 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const [voucher] = await db.select().from(vouchers).where(eq(vouchers.code, code)).limit(1);
 
-	// Tidak ditemukan ATAU status selain 'aktif' → pesan generik yang sama,
-	// supaya tidak membocorkan status/keberadaan kode ke publik.
-	if (!voucher || voucher.status !== 'aktif') {
-		throw error(422, GENERIC_INVALID);
+	// Sudah pernah diklaim → pesan spesifik agar pengklaim tahu kenapa ditolak.
+	if (voucher?.status === 'sudah_diklaim') {
+		throw error(422, 'Kode Voucher Sudah Diklaim.');
 	}
 
-	if (voucher.generatedImagePath) {
-		return json({ ok: true, imagePath: voucher.generatedImagePath });
+	// Tidak ditemukan, status lain yang bukan 'aktif', ATAU sudah kedaluwarsa →
+	// pesan generik yang sama, supaya tidak membocorkan keberadaan kode ke publik.
+	const expired = voucher?.expiredAt && new Date(voucher.expiredAt).getTime() <= Date.now();
+	if (!voucher || voucher.status !== 'aktif' || expired) {
+		throw error(422, GENERIC_INVALID);
 	}
 
 	const [template] = await db
@@ -49,11 +51,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		.limit(1);
 	if (!template) throw error(500, 'Template voucher tidak ditemukan.');
 
-	const imagePath = await renderVoucherImage(template, voucher.code);
+	const imagePath = await renderVoucherImage(template, voucher.code, voucher.expiredAt);
 
 	await db
 		.update(vouchers)
-		.set({ generatedImagePath: imagePath, claimedAt: new Date() })
+		.set({ generatedImagePath: imagePath, claimedAt: new Date(), status: 'sudah_diklaim' })
 		.where(eq(vouchers.id, voucher.id));
 
 	return json({ ok: true, imagePath });

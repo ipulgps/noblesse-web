@@ -25,6 +25,12 @@ const parse = (form: FormData) => ({
 	codeY: intOf(form.get('codeY')),
 	fontSize: Math.max(8, intOf(form.get('fontSize'), 32)),
 	textColor: str(form.get('textColor'), 20) || '#000000',
+	amount: Math.max(0, intOf(form.get('amount'))),
+	redeemLocation: str(form.get('redeemLocation'), 255),
+	expiredX: intOf(form.get('expiredX')),
+	expiredY: intOf(form.get('expiredY')),
+	expiredFontSize: Math.max(8, intOf(form.get('expiredFontSize'), 24)),
+	expiredTextColor: str(form.get('expiredTextColor'), 20) || '#000000',
 	isActive: form.get('isActive') ? 1 : 0
 });
 

@@ -59,6 +59,14 @@
 			const body = await res.json().catch(() => ({}));
 			if (!res.ok) throw new Error(body.message || 'Kode voucher tidak valid.');
 			claimedImagePath = body.imagePath;
+			// Unduh otomatis begitu klaim berhasil — tombol unduh manual tetap
+			// tersedia di bawah preview untuk jaga-jaga jika auto-download diblokir browser.
+			const a = document.createElement('a');
+			a.href = body.imagePath;
+			a.download = '';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
 		} catch (err) {
 			claimError = err instanceof Error ? err.message : 'Kode voucher tidak valid.';
 		} finally {

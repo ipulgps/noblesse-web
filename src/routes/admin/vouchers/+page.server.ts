@@ -14,6 +14,7 @@ export const load: PageServerLoad = async () => {
 				status: vouchers.status,
 				claimedAt: vouchers.claimedAt,
 				createdAt: vouchers.createdAt,
+				expiredAt: vouchers.expiredAt,
 				templateId: vouchers.templateId,
 				templateName: voucherTemplates.name
 			})
@@ -34,7 +35,13 @@ const intOf = (v: FormDataEntryValue | null, fallback = 0) => {
 	return Number.isFinite(n) ? n : fallback;
 };
 
-const STATUSES = ['belum_aktivasi', 'aktif', 'tidak_aktif', 'sudah_digunakan'] as const;
+const STATUSES = [
+	'belum_aktivasi',
+	'aktif',
+	'tidak_aktif',
+	'sudah_digunakan',
+	'sudah_diklaim'
+] as const;
 
 function generateCode() {
 	// 12 digit angka acak (kriptografis), boleh berawalan 0 — disimpan sebagai string.
@@ -61,6 +68,15 @@ export const actions: Actions = {
 		const count = Math.max(1, Math.min(100, intOf(form.get('count'), 1)));
 		if (!templateId) return fail(422, { error: 'Pilih template terlebih dahulu.' });
 
+		const expiredAtRaw = String(form.get('expiredAt') ?? '').trim();
+		const expiredAt = expiredAtRaw ? new Date(`${expiredAtRaw}T23:59:59`) : null;
+		if (!expiredAt || Number.isNaN(expiredAt.getTime())) {
+			return fail(422, { error: 'Tanggal kedaluwarsa wajib diisi dan valid.' });
+		}
+		if (expiredAt.getTime() <= Date.now()) {
+			return fail(422, { error: 'Tanggal kedaluwarsa harus di masa depan.' });
+		}
+
 		const [template] = await db
 			.select({ id: voucherTemplates.id })
 			.from(voucherTemplates)
@@ -70,7 +86,7 @@ export const actions: Actions = {
 
 		for (let i = 0; i < count; i++) {
 			const code = await uniqueCode();
-			await db.insert(vouchers).values({ code, templateId, status: 'belum_aktivasi' });
+			await db.insert(vouchers).values({ code, templateId, status: 'belum_aktivasi', expiredAt });
 		}
 		return { ok: true };
 	},

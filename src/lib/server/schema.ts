@@ -186,6 +186,14 @@ export const voucherTemplates = mysqlTable('voucher_templates', {
 	codeY: int('code_y').notNull().default(0),
 	fontSize: int('font_size').notNull().default(32),
 	textColor: varchar('text_color', { length: 20 }).notNull().default('#000000'),
+	// Nominal voucher (Rp) dan lokasi penukaran — berlaku untuk semua kode dari template ini.
+	amount: int('amount').notNull().default(0),
+	redeemLocation: varchar('redeem_location', { length: 255 }).notNull().default(''),
+	// Posisi & gaya teks tanggal kedaluwarsa di atas gambar template.
+	expiredX: int('expired_x').notNull().default(0),
+	expiredY: int('expired_y').notNull().default(0),
+	expiredFontSize: int('expired_font_size').notNull().default(24),
+	expiredTextColor: varchar('expired_text_color', { length: 20 }).notNull().default('#000000'),
 	isActive: tinyint('is_active').notNull().default(1),
 	createdAt,
 	updatedAt
@@ -196,9 +204,17 @@ export const vouchers = mysqlTable('vouchers', {
 	id: int('id').autoincrement().primaryKey(),
 	code: varchar('code', { length: 12 }).notNull().unique(),
 	templateId: int('template_id').notNull(),
-	status: mysqlEnum('status', ['belum_aktivasi', 'aktif', 'tidak_aktif', 'sudah_digunakan'])
+	status: mysqlEnum('status', [
+		'belum_aktivasi',
+		'aktif',
+		'tidak_aktif',
+		'sudah_digunakan',
+		'sudah_diklaim'
+	])
 		.notNull()
 		.default('belum_aktivasi'),
+	// Tanggal kedaluwarsa — diisi admin saat generate voucher (bisa beda per batch).
+	expiredAt: datetime('expired_at'),
 	// Path gambar hasil generate (QR + nomor di-composite ke template) — dibuat
 	// sekali saat klaim pertama, lalu dipakai ulang untuk klaim/unduh berikutnya.
 	generatedImagePath: varchar('generated_image_path', { length: 255 }),

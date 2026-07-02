@@ -5,18 +5,26 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	const statuses = ['belum_aktivasi', 'aktif', 'tidak_aktif', 'sudah_digunakan'] as const;
+	const statuses = [
+		'belum_aktivasi',
+		'aktif',
+		'tidak_aktif',
+		'sudah_digunakan',
+		'sudah_diklaim'
+	] as const;
 	const statusLabel: Record<string, string> = {
 		belum_aktivasi: 'Belum Aktivasi',
 		aktif: 'Aktif',
 		tidak_aktif: 'Tidak Aktif',
-		sudah_digunakan: 'Sudah Digunakan'
+		sudah_digunakan: 'Sudah Digunakan',
+		sudah_diklaim: 'Sudah Klaim'
 	};
 	const statusColor: Record<string, string> = {
 		belum_aktivasi: 'background:#fff4e0;color:#9a6b00;',
 		aktif: 'background:#e7f6ec;color:#1a7f43;',
 		tidak_aktif: 'background:#f0f1f4;color:#8a93a7;',
-		sudah_digunakan: 'background:#e3f0ff;color:#1c4f99;'
+		sudah_digunakan: 'background:#e3f0ff;color:#1c4f99;',
+		sudah_diklaim: 'background:#f3e8ff;color:#6b21a8;'
 	};
 	const fmtDate = (d: string | Date | null) =>
 		d ? new Date(d).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
@@ -24,6 +32,7 @@
 	let creating = $state(false);
 	let templateId = $state(untrack(() => data.templates[0]?.id ?? 0));
 	let count = $state(1);
+	let expiredAt = $state('');
 </script>
 
 <svelte:head><title>Voucher — Noblesse Admin</title></svelte:head>
@@ -75,6 +84,10 @@
 				<label for="v-count">Jumlah Kode</label>
 				<input id="v-count" name="count" type="number" min="1" max="100" bind:value={count} />
 			</div>
+			<div class="adm-field">
+				<label for="v-expired">Tanggal Kedaluwarsa</label>
+				<input id="v-expired" name="expiredAt" type="date" required bind:value={expiredAt} />
+			</div>
 			<div class="adm-form-actions">
 				<button type="submit" class="adm-btn adm-btn-gold">Generate</button>
 				<button type="button" class="adm-btn adm-btn-ghost" onclick={() => (creating = false)}
@@ -92,8 +105,9 @@
 		<table class="adm-table">
 			<thead>
 				<tr
-					><th>Kode</th><th>Template</th><th>Diklaim</th><th>Dibuat</th><th>Status</th><th
-						style="width:1%;">Aksi</th
+					><th>Kode</th><th>Template</th><th>Diklaim</th><th>Dibuat</th><th>Kedaluwarsa</th><th
+						>Status</th
+					><th style="width:1%;">Aksi</th
 					></tr
 				>
 			</thead>
@@ -104,6 +118,7 @@
 						<td>{v.templateName}</td>
 						<td style="white-space:nowrap;color:#7a8499;font-size:13px;">{fmtDate(v.claimedAt)}</td>
 						<td style="white-space:nowrap;color:#7a8499;font-size:13px;">{fmtDate(v.createdAt)}</td>
+						<td style="white-space:nowrap;color:#7a8499;font-size:13px;">{fmtDate(v.expiredAt)}</td>
 						<td>
 							<form method="POST" action="?/setStatus" use:enhance>
 								<input type="hidden" name="id" value={v.id} />

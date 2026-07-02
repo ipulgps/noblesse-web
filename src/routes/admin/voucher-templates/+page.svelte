@@ -17,6 +17,12 @@
 		codeY: 260,
 		fontSize: 32,
 		textColor: '#000000',
+		amount: 0,
+		redeemLocation: '',
+		expiredX: 20,
+		expiredY: 300,
+		expiredFontSize: 24,
+		expiredTextColor: '#000000',
 		isActive: 1
 	};
 	let editing = $state<typeof blank | null>(null);
@@ -42,6 +48,12 @@
 			codeY: t.codeY,
 			fontSize: t.fontSize,
 			textColor: t.textColor,
+			amount: t.amount,
+			redeemLocation: t.redeemLocation,
+			expiredX: t.expiredX,
+			expiredY: t.expiredY,
+			expiredFontSize: t.expiredFontSize,
+			expiredTextColor: t.expiredTextColor,
 			isActive: t.isActive
 		});
 
@@ -53,7 +65,7 @@
 
 	// Drag handle generik: menyeret memperbarui field x/y (koordinat asli gambar)
 	// berdasar posisi kursor relatif terhadap kotak preview yang mungkin diskalakan.
-	function startDrag(field: 'qr' | 'code') {
+	function startDrag(field: 'qr' | 'code' | 'expired') {
 		return (e: PointerEvent) => {
 			e.preventDefault();
 			const box = previewEl;
@@ -68,9 +80,16 @@
 				if (field === 'qr') {
 					editing.qrX = Math.max(0, x);
 					editing.qrY = Math.max(0, y);
-				} else {
+				} else if (field === 'code') {
+					// codeX/codeY disimpan sebagai baseline teks SVG (dipakai langsung
+					// sebagai x/y pada <text>), tapi kursor harus "memegang" pojok
+					// kiri-atas kotak seperti QR agar drag terasa presisi 1:1 —
+					// karena itu baseline = posisi kursor + tinggi font.
 					editing.codeX = Math.max(0, x);
-					editing.codeY = Math.max(0, y);
+					editing.codeY = Math.max(0, y + editing.fontSize);
+				} else {
+					editing.expiredX = Math.max(0, x);
+					editing.expiredY = Math.max(0, y + editing.expiredFontSize);
 				}
 			};
 			const up = () => {
@@ -132,6 +151,20 @@
 				>
 			</div>
 
+			<div class="adm-field">
+				<label for="vt-amount">Nominal Voucher (Rp)</label>
+				<input id="vt-amount" name="amount" type="number" min="0" bind:value={editing.amount} />
+			</div>
+			<div class="adm-field">
+				<label for="vt-loc">Lokasi Penukaran</label>
+				<input
+					id="vt-loc"
+					name="redeemLocation"
+					bind:value={editing.redeemLocation}
+					placeholder="mis. Kantor Pemasaran Noblesse, Jl. ..."
+				/>
+			</div>
+
 			<div class="adm-field full">
 				{#key editing.id}
 					<ImageUpload
@@ -166,12 +199,28 @@
 							<div
 								class="vt-handle vt-handle-code"
 								style="left:{editing.codeX * previewScale}px; top:{editing.codeY *
-									previewScale - editing.fontSize * previewScale}px;"
+									previewScale -
+									editing.fontSize *
+										previewScale}px; font-size:{editing.fontSize * previewScale}px; line-height:{editing.fontSize *
+									previewScale}px;"
 								onpointerdown={startDrag('code')}
 								role="button"
 								tabindex="0"
 							>
-								{editing.name ? '0000-0000' : 'NOMOR'}
+								{editing.name ? '000000000000' : 'NOMOR'}
+							</div>
+							<div
+								class="vt-handle vt-handle-expired"
+								style="left:{editing.expiredX * previewScale}px; top:{editing.expiredY *
+									previewScale -
+									editing.expiredFontSize *
+										previewScale}px; font-size:{editing.expiredFontSize *
+									previewScale}px; line-height:{editing.expiredFontSize * previewScale}px;"
+								onpointerdown={startDrag('expired')}
+								role="button"
+								tabindex="0"
+							>
+								31 Des 2026
 							</div>
 						{/if}
 					</div>
@@ -206,6 +255,34 @@
 			<div class="adm-field">
 				<label for="vt-tc">Nomor — Warna</label>
 				<input id="vt-tc" name="textColor" type="color" bind:value={editing.textColor} />
+			</div>
+
+			<div class="adm-field">
+				<label for="vt-ex">Expired — X (px)</label>
+				<input id="vt-ex" name="expiredX" type="number" bind:value={editing.expiredX} />
+			</div>
+			<div class="adm-field">
+				<label for="vt-ey">Expired — Y (px)</label>
+				<input id="vt-ey" name="expiredY" type="number" bind:value={editing.expiredY} />
+			</div>
+			<div class="adm-field">
+				<label for="vt-efs">Expired — Ukuran Font</label>
+				<input
+					id="vt-efs"
+					name="expiredFontSize"
+					type="number"
+					min="8"
+					bind:value={editing.expiredFontSize}
+				/>
+			</div>
+			<div class="adm-field">
+				<label for="vt-etc">Expired — Warna</label>
+				<input
+					id="vt-etc"
+					name="expiredTextColor"
+					type="color"
+					bind:value={editing.expiredTextColor}
+				/>
 			</div>
 
 			<div class="adm-form-actions">
@@ -326,6 +403,12 @@
 	.vt-handle-code {
 		border: 2px dashed #2e7d32;
 		background: rgba(46, 125, 50, 0.15);
+		padding: 2px 6px;
+		white-space: nowrap;
+	}
+	.vt-handle-expired {
+		border: 2px dashed #1c4f99;
+		background: rgba(28, 79, 153, 0.15);
 		padding: 2px 6px;
 		white-space: nowrap;
 	}
