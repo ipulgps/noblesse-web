@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
 	import ImageUpload from '$lib/ImageUpload.svelte';
 	import type { PageData, ActionData } from './$types';
 
@@ -10,17 +11,30 @@
 	let editing = $state<typeof blank | null>(null);
 	let saving = $state(false);
 	let uploadingImg = $state(false);
+	let formCardEl: HTMLDivElement | undefined = $state();
 
-	const openCreate = () => (editing = { ...blank, sortOrder: data.gallery.length });
-	const openEdit = (g: Row) =>
-		(editing = {
+	// Form muncul di atas tabel; setelah dibuka, gulir ke sana supaya user tahu
+	// formnya terbuka (tidak perlu scroll manual ke atas).
+	async function scrollToForm() {
+		await tick();
+		formCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
+	const openCreate = () => {
+		editing = { ...blank, sortOrder: data.gallery.length };
+		scrollToForm();
+	};
+	const openEdit = (g: Row) => {
+		editing = {
 			id: g.id,
 			imagePath: g.imagePath,
 			caption: g.caption ?? '',
 			heightPx: g.heightPx,
 			sortOrder: g.sortOrder,
 			isActive: g.isActive
-		});
+		};
+		scrollToForm();
+	};
 </script>
 
 <svelte:head><title>Galeri — Noblesse Admin</title></svelte:head>
@@ -34,7 +48,7 @@
 </div>
 
 {#if editing}
-	<div class="adm-card" style="padding:28px;margin-bottom:24px;">
+	<div class="adm-card" style="padding:28px;margin-bottom:24px;scroll-margin-top:80px;" bind:this={formCardEl}>
 		<h2 style="font-family:'Playfair Display',serif;font-size:21px;color:#0a1f44;margin:0 0 20px;">
 			{editing.id ? 'Edit' : 'Tambah'} Foto
 		</h2>

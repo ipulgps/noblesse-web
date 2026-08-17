@@ -11,7 +11,7 @@ const ALLOWED: Record<string, string> = {
 	'image/avif': '.avif',
 	'image/gif': '.gif'
 };
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 20 * 1024 * 1024; // 20 MB — cukup untuk foto 360° equirectangular resolusi tinggi
 const UPLOAD_DIR = join(process.cwd(), 'static', 'uploads');
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -24,7 +24,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const ext = ALLOWED[file.type];
 	if (!ext) throw error(415, 'Format harus JPG, PNG, WebP, AVIF, atau GIF.');
-	if (file.size > MAX_BYTES) throw error(413, 'Ukuran maksimal 5 MB.');
+	if (file.size > MAX_BYTES) throw error(413, 'Ukuran maksimal 20 MB.');
 
 	const buf = Buffer.from(await file.arrayBuffer());
 	// Nama unik; abaikan ekstensi asli, pakai dari tipe MIME.

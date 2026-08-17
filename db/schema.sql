@@ -57,18 +57,21 @@ CREATE TABLE IF NOT EXISTS about_timeline (
 
 -- ========== PROYEK ==========
 CREATE TABLE IF NOT EXISTS projects (
-  id          INT AUTO_INCREMENT PRIMARY KEY,
-  name        VARCHAR(160) NOT NULL,
-  location    VARCHAR(160) NOT NULL,
-  price_label VARCHAR(60)  NOT NULL,
-  badge       VARCHAR(40)  NULL,
-  badge_style ENUM('gold','dark') NOT NULL DEFAULT 'gold',
-  image_path  VARCHAR(255) NULL,
-  description TEXT NULL,
-  sort_order  INT NOT NULL DEFAULT 0,
-  is_active   TINYINT(1) NOT NULL DEFAULT 1,
-  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(160) NOT NULL,
+  slug          VARCHAR(160) NOT NULL,
+  location      VARCHAR(160) NOT NULL,
+  price_label   VARCHAR(60)  NOT NULL,
+  badge         VARCHAR(40)  NULL,
+  badge_style   ENUM('gold','dark') NOT NULL DEFAULT 'gold',
+  image_path    VARCHAR(255) NULL,
+  description   TEXT NULL,
+  house_type_id INT NULL,
+  sort_order    INT NOT NULL DEFAULT 0,
+  is_active     TINYINT(1) NOT NULL DEFAULT 1,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY projects_slug_unique (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========== GALERI ==========
@@ -121,6 +124,29 @@ CREATE TABLE IF NOT EXISTS house_types (
   is_active     TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== TITIK TUR VIRTUAL 360° (per proyek) ==========
+CREATE TABLE IF NOT EXISTS virtual_tour_nodes (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  project_id   INT NOT NULL,
+  tour_type    ENUM('interior','streetview') NOT NULL,
+  node_key     VARCHAR(60)  NOT NULL,
+  name         VARCHAR(120) NOT NULL,
+  image_path   VARCHAR(255) NOT NULL,
+  map_x        INT NOT NULL DEFAULT 50,
+  map_y        INT NOT NULL DEFAULT 50,
+  initial_yaw  INT NULL,
+  links_json   TEXT NULL,
+  marker_title VARCHAR(120) NULL,
+  marker_desc  VARCHAR(500) NULL,
+  marker_yaw   VARCHAR(20)  NULL,
+  marker_pitch VARCHAR(20)  NULL,
+  sort_order   INT NOT NULL DEFAULT 0,
+  is_active    TINYINT(1) NOT NULL DEFAULT 1,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY virtual_tour_nodes_project_id (project_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========== TESTIMONI ==========

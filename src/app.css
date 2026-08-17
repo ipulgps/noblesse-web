@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+/* Kecualikan aset berat dari pemindaian kelas Tailwind. Tanpa ini, Tailwind v4
+   (zero-config) memindai seluruh folder proyek termasuk static/ (~500 MB foto
+   360° & model .glb), membuat oxide scanner hang / gagal alokasi memori. */
+@source not '../static';
+
 /* ===== Noblesse Property — design tokens & base styles ===== */
 :root {
   --nb-navy: #0a1f44;

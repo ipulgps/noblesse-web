@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import ImageSlot from '$lib/ImageSlot.svelte';
+	import Model3DViewer from '$lib/components/Model3DViewer.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -107,6 +109,7 @@
 	// ---------- derived: floor plans (dari DB) ----------
 	const plans = $derived(
 		data.houseTypes.map((h) => ({
+			id: h.id,
 			nm: h.name,
 			code: h.typeCode,
 			lb: String(h.buildingArea),
@@ -124,6 +127,7 @@
 		{ href: '#about', label: 'Tentang' },
 		{ href: '#projects', label: 'Proyek' },
 		{ href: '#gallery', label: 'Galeri' },
+		{ href: '#floorplan', label: 'Denah Unit' },
 		{ href: '#facilities', label: 'Fasilitas' },
 		{ href: '#location', label: 'Lokasi' },
 		{ href: '#kpr', label: 'Simulasi KPR' },
@@ -334,13 +338,19 @@
 		data.projects.map((p, i) => ({
 			loc: p.location,
 			name: p.name,
+			slug: p.slug,
 			price: p.priceLabel,
 			badge: p.badge ?? '',
 			gold: p.badgeStyle === 'gold',
 			img: p.imagePath,
+			houseTypeId: p.houseTypeId,
 			d: i * 140
 		}))
 	);
+
+	function viewTourForProject(slug: string) {
+		goto(`/tur-virtual/${slug}`);
+	}
 
 	type Field = { label: string; val: string; min: number; max: number; step: number; get: () => number; set: (v: number) => void; fs: string; mb: boolean };
 	const kprFields = $derived<Field[]>([
@@ -363,6 +373,8 @@
 		{ h: '#about', l: 'Tentang Kami' },
 		{ h: '#projects', l: 'Proyek' },
 		{ h: '#gallery', l: 'Galeri' },
+		{ h: '#floorplan', l: 'Denah Unit' },
+		{ h: '/tur-virtual', l: 'Tur Virtual 360°' },
 		{ h: '#facilities', l: 'Fasilitas' }
 	];
 	const footerHunian = $derived([
@@ -475,41 +487,105 @@
 
 		<div
 			bind:this={heroContent}
-			style="position:relative;z-index:3;width:100%;max-width:1100px;margin:0 auto;padding:120px clamp(24px,6vw,64px) 80px;text-align:center;"
+			style="position:relative;z-index:3;width:100%;max-width:1400px;margin:0 auto;padding:96px clamp(24px,6vw,64px) 64px;display:flex;align-items:center;gap:clamp(24px,4vw,64px);flex-wrap:wrap;"
 		>
-			<div use:reveal={0} style="display:inline-flex;align-items:center;gap:14px;margin-bottom:30px;">
-				<span style="width:38px;height:1px;background:linear-gradient(90deg,transparent,var(--nb-accent));"></span>
-				<span style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:.42em;color:var(--nb-accent);font-weight:600;">NOBLESSE&nbsp;PROPERTY</span>
-				<span style="width:38px;height:1px;background:linear-gradient(90deg,var(--nb-accent),transparent);"></span>
+			<div style="flex:1 1 460px;min-width:300px;text-align:left;">
+				<div use:reveal={0} style="display:inline-flex;align-items:center;gap:14px;margin-bottom:28px;padding:8px 18px 8px 6px;background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.22);border-radius:999px;">
+					<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;font-family:var(--nb-head);font-weight:800;font-size:13px;">N</span>
+					<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.32em;color:var(--nb-accent-l);font-weight:600;">NOBLESSE&nbsp;PROPERTY</span>
+				</div>
+				<h1
+					use:reveal={140}
+					style="font-family:var(--nb-head);font-weight:800;font-size:clamp(40px,5vw,68px);line-height:1.06;letter-spacing:-.02em;color:#fff;margin:0 0 22px;text-wrap:balance;"
+				>
+					Temukan Hunian
+					<span
+						style="display:block;font-style:italic;font-weight:500;background:linear-gradient(120deg,var(--nb-accent-l),var(--nb-accent),var(--nb-accent-l));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;"
+						>Impian Anda</span
+					>
+				</h1>
+				<p
+					use:reveal={280}
+					style="max-width:440px;margin:0 0 36px;color:#b7c2d9;font-size:clamp(16px,1.3vw,18.5px);line-height:1.75;font-weight:300;"
+				>
+					{s('hero_subtitle', 'Perumahan modern dengan konsep premium, arsitektur elegan, dan lokasi paling strategis di jantung kota.')}
+				</p>
+
+				<!-- Trust-strip: sorotan singkat dari angka STATS resmi di bawah (data.stats),
+				     supaya konsisten & tak mengarang angka baru di hero. -->
+				{#if data.stats?.length}
+					<div use:reveal={360} style="display:flex;gap:clamp(20px,3vw,40px);margin-bottom:36px;">
+						{#each data.stats.slice(0, 3) as stat}
+							<div>
+								<div style="font-family:var(--nb-head);font-weight:800;font-size:26px;color:#fff;line-height:1;">{stat.value}<span style="color:var(--nb-accent);">{stat.suffix}</span></div>
+								<div style="margin-top:6px;color:#7c88a5;font-size:12px;line-height:1.4;letter-spacing:.01em;">{stat.label}</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+				<div use:reveal={440} style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:30px;">
+					<a
+						href="/tur-virtual"
+						class="btn-gold"
+						style="display:inline-flex;align-items:center;gap:12px;padding:18px 38px;background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;border-radius:2px;font-size:13.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;transition:all .4s ease;box-shadow:0 14px 40px rgba(212,175,55,.32);"
+					>
+						<span
+							style="display:inline-flex;width:9px;height:9px;border-radius:50%;background:#08152E;box-shadow:0 0 0 4px rgba(8,21,46,.18);animation:nbGlow 2s ease-in-out infinite;"
+						></span>
+						Mulai Tur Virtual
+					</a>
+					<a
+						href="#projects"
+						class="btn-outline"
+						style="display:inline-flex;align-items:center;gap:10px;padding:18px 34px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:2px;font-size:13.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;transition:all .4s ease;"
+						>Lihat Unit</a
+					>
+				</div>
+				<div use:reveal={520} style="display:flex;align-items:center;gap:10px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1);">
+					<a
+						href="#contact"
+						style="display:inline-flex;align-items:center;gap:8px;color:var(--nb-accent-l);font-size:13.5px;font-weight:600;letter-spacing:.04em;text-decoration:none;width:fit-content;"
+					>
+						Hubungi Tim Marketing
+						<span style="font-size:15px;line-height:1;">→</span>
+					</a>
+					<span style="color:#4a5675;font-size:13px;">·</span>
+					<p style="margin:0;color:#8b97b3;font-size:13.5px;letter-spacing:.02em;">
+						Tur VR &amp; Streetview 360° tersedia
+					</p>
+				</div>
 			</div>
-			<h1
-				use:reveal={140}
-				style="font-family:var(--nb-head);font-weight:800;font-size:clamp(42px,7vw,92px);line-height:1.02;letter-spacing:-.02em;color:#fff;margin:0 0 26px;text-wrap:balance;"
+
+			<div
+				use:reveal={260}
+				data-reveal-x="40"
+				style="flex:1 1 460px;min-width:300px;position:relative;height:clamp(380px,44vw,580px);"
 			>
-				Temukan Hunian<br /><span
-					style="font-style:italic;font-weight:500;background:linear-gradient(120deg,var(--nb-accent-l),var(--nb-accent),var(--nb-accent-l));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;"
-					>Impian</span
-				> Anda
-			</h1>
-			<p
-				use:reveal={280}
-				style="max-width:640px;margin:0 auto 44px;color:#b7c2d9;font-size:clamp(16px,1.5vw,20px);line-height:1.7;font-weight:300;"
-			>
-				{s('hero_subtitle', 'Perumahan modern dengan konsep premium, arsitektur elegan, dan lokasi paling strategis di jantung kota.')}
-			</p>
-			<div use:reveal={420} style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-				<a
-					href="#projects"
-					class="btn-gold"
-					style="display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;border-radius:2px;font-size:13.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;transition:all .4s ease;box-shadow:0 14px 40px rgba(212,175,55,.32);"
-					>Lihat Unit</a
+				<!-- Glow keemasan di belakang panel — memberi kedalaman & kesan "premium showcase". -->
+				<div
+					style="position:absolute;inset:-12%;background:radial-gradient(58% 58% at 50% 46%, rgba(212,175,55,.22), transparent 68%);pointer-events:none;z-index:0;"
+				></div>
+				<!-- Frame ganda: garis tipis di belakang (offset) + panel kaca di depan. -->
+				<div style="position:absolute;inset:20px -20px -20px 20px;border:1px solid rgba(212,175,55,.4);border-radius:6px;pointer-events:none;z-index:1;"></div>
+				<div
+					style="position:relative;width:100%;height:100%;border-radius:6px;overflow:hidden;z-index:2;background:#0a1f44;border:1px solid rgba(212,175,55,.18);box-shadow:0 40px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset;"
 				>
-				<a
-					href="#contact"
-					class="btn-outline"
-					style="display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:2px;font-size:13.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;transition:all .4s ease;"
-					>Hubungi Marketing</a
-				>
+					<Model3DViewer
+						glbSrc="/images/tours/rajendra-hills/3D/rajendra_3d.glb"
+						envImage="/images/tours/rajendra-hills/env/golden-hour.hdr"
+						houseName="Rumah Noblesse Property"
+						compact={true}
+						frontView={true}
+					/>
+					<!-- Label mengambang: menegaskan ini showcase 3D interaktif, bukan foto statis. -->
+					<div
+						style="position:absolute;left:18px;bottom:18px;z-index:4;display:inline-flex;align-items:center;gap:9px;padding:9px 16px;background:rgba(6,14,34,.72);backdrop-filter:blur(6px);border:1px solid rgba(212,175,55,.3);border-radius:999px;pointer-events:none;"
+					>
+						<span style="display:inline-flex;width:7px;height:7px;border-radius:50%;background:var(--nb-accent);box-shadow:0 0 0 3px rgba(212,175,55,.2);animation:nbGlow 2s ease-in-out infinite;"></span>
+						<span style="color:#e7ecf5;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;">Model 3D Interaktif</span>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -612,13 +688,23 @@
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--nb-accent)" stroke-width="1.6"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>{proj.loc}
 							</div>
 							<h3 style="font-family:var(--nb-head);font-weight:700;font-size:26px;color:var(--nb-navy);margin:0 0 16px;">{proj.name}</h3>
-							<div style="display:flex;align-items:flex-end;justify-content:space-between;border-top:1px solid #eee;padding-top:18px;">
+							<div style="display:flex;align-items:flex-end;justify-content:space-between;border-top:1px solid #eee;padding-top:18px;{proj.houseTypeId != null ? 'margin-bottom:16px;' : ''}">
 								<div>
 									<div style="font-size:12px;color:#9aa3b5;letter-spacing:.08em;">MULAI DARI</div>
 									<div style="font-family:var(--nb-head);font-size:24px;color:var(--nb-accent);font-weight:700;">{proj.price}</div>
 								</div>
 								<a href="#contact" style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--nb-navy);border-bottom:1px solid var(--nb-accent);padding-bottom:3px;">Detail →</a>
 							</div>
+							{#if proj.houseTypeId != null}
+								<button
+									type="button"
+									onclick={() => viewTourForProject(proj.slug)}
+									style="width:100%;margin-top:16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;background:#0A1F44;color:#fff;border:1px solid rgba(212,175,55,.4);border-radius:2px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .3s;"
+								>
+									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--nb-accent)" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9Z" /></svg>
+									Lihat Tour 360°
+								</button>
+							{/if}
 						</div>
 					</div>
 				{/each}
@@ -787,6 +873,28 @@
 					>
 				</div>
 			</div>
+		</div>
+	</section>
+
+	<!-- ================= VIRTUAL TOUR 360 ================= -->
+	<section id="tour-360" style="background:#0A1F44;padding:clamp(80px,10vw,140px) clamp(20px,5vw,56px);position:relative;overflow:hidden;">
+		<div style="position:absolute;inset:0;opacity:.5;background-image:linear-gradient(rgba(212,175,55,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.045) 1px,transparent 1px);background-size:64px 64px;-webkit-mask-image:radial-gradient(circle at 50% 20%,#000,transparent 78%);mask-image:radial-gradient(circle at 50% 20%,#000,transparent 78%);"></div>
+		<div style="position:relative;max-width:900px;margin:0 auto;text-align:center;">
+			<div use:reveal style="display:inline-flex;align-items:center;gap:14px;margin-bottom:20px;">
+				<span style="width:34px;height:1px;background:var(--nb-accent);"></span>
+				<span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.34em;color:var(--nb-accent);font-weight:600;">VIRTUAL TOUR 360°</span>
+				<span style="width:34px;height:1px;background:var(--nb-accent);"></span>
+			</div>
+			<h2 use:reveal={80} style="font-family:var(--nb-head);font-weight:800;font-size:clamp(30px,4.2vw,52px);line-height:1.08;color:#fff;margin:0 0 16px;">Jelajahi Hunian Secara Interaktif</h2>
+			<p use:reveal={140} style="color:#8b97b3;font-size:16px;line-height:1.8;margin:0 auto 36px;max-width:520px;">Rasakan pengalaman berjalan langsung di dalam rumah — jelajahi interior lewat Tur VR dan ikuti jalur menuju lokasi lewat Streetview 360°.</p>
+			<a
+				use:reveal={200}
+				href="/tur-virtual"
+				class="btn-gold"
+				style="display:inline-flex;align-items:center;gap:10px;padding:16px 34px;background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));color:#08152E;border-radius:2px;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;transition:all .4s;"
+			>
+				Buka Tur VR &amp; Streetview Lengkap →
+			</a>
 		</div>
 	</section>
 

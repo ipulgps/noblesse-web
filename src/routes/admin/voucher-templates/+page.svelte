@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
 	import ImageUpload from '$lib/ImageUpload.svelte';
 	import type { PageData, ActionData } from './$types';
 
@@ -28,6 +29,14 @@
 	let editing = $state<typeof blank | null>(null);
 	let saving = $state(false);
 	let uploadingImg = $state(false);
+	let formCardEl: HTMLDivElement | undefined = $state();
+
+	// Form muncul di atas tabel; setelah dibuka, gulir ke sana supaya user tahu
+	// formnya terbuka (tidak perlu scroll manual ke atas).
+	async function scrollToForm() {
+		await tick();
+		formCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 
 	// Ukuran asli gambar template (dibaca saat gambar dimuat) dan skala tampilan
 	// preview, supaya koordinat px yang disimpan tetap relatif ke ukuran asli.
@@ -35,9 +44,12 @@
 	let naturalH = $state(0);
 	let previewEl = $state<HTMLDivElement | null>(null);
 
-	const openCreate = () => (editing = { ...blank });
-	const openEdit = (t: Row) =>
-		(editing = {
+	const openCreate = () => {
+		editing = { ...blank };
+		scrollToForm();
+	};
+	const openEdit = (t: Row) => {
+		editing = {
 			id: t.id,
 			name: t.name,
 			imagePath: t.imagePath,
@@ -55,7 +67,9 @@
 			expiredFontSize: t.expiredFontSize,
 			expiredTextColor: t.expiredTextColor,
 			isActive: t.isActive
-		});
+		};
+		scrollToForm();
+	};
 
 	function onPreviewImgLoad(e: Event) {
 		const img = e.currentTarget as HTMLImageElement;
@@ -119,7 +133,7 @@
 </div>
 
 {#if editing}
-	<div class="adm-card" style="padding:28px;margin-bottom:24px;">
+	<div class="adm-card" style="padding:28px;margin-bottom:24px;scroll-margin-top:80px;" bind:this={formCardEl}>
 		<h2 style="font-family:'Playfair Display',serif;font-size:21px;color:#0a1f44;margin:0 0 20px;">
 			{editing.id ? 'Edit' : 'Tambah'} Template
 		</h2>

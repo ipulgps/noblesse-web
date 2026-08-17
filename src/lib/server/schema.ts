@@ -71,12 +71,16 @@ export const aboutTimeline = mysqlTable('about_timeline', {
 export const projects = mysqlTable('projects', {
 	id: int('id').autoincrement().primaryKey(),
 	name: varchar('name', { length: 160 }).notNull(),
+	// Dipakai untuk URL publik (mis. /tur-virtual/[slug]) — unik, diisi admin dari form project.
+	slug: varchar('slug', { length: 160 }).notNull().unique(),
 	location: varchar('location', { length: 160 }).notNull(),
 	priceLabel: varchar('price_label', { length: 60 }).notNull(),
 	badge: varchar('badge', { length: 40 }),
 	badgeStyle: mysqlEnum('badge_style', ['gold', 'dark']).notNull().default('gold'),
 	imagePath: varchar('image_path', { length: 255 }),
 	description: text('description'),
+	// Desain rumah yang dipakai proyek ini (relasi ke house_types.id, tanpa FK constraint mengikuti pola tabel lain di file ini)
+	houseTypeId: int('house_type_id'),
 	sortOrder: int('sort_order').notNull().default(0),
 	isActive: tinyint('is_active').notNull().default(1),
 	createdAt,
@@ -129,6 +133,34 @@ export const houseTypes = mysqlTable('house_types', {
 	carport: varchar('carport', { length: 10 }).notNull(),
 	floors: varchar('floors', { length: 40 }).notNull(),
 	floorplanImg: varchar('floorplan_img', { length: 255 }),
+	sortOrder: int('sort_order').notNull().default(0),
+	isActive: tinyint('is_active').notNull().default(1),
+	createdAt,
+	updatedAt
+});
+
+// ========== TITIK TUR VIRTUAL 360° (per proyek) ==========
+export const virtualTourNodes = mysqlTable('virtual_tour_nodes', {
+	id: int('id').autoincrement().primaryKey(),
+	// Relasi ke projects.id, tanpa FK constraint mengikuti pola tabel lain di file ini
+	projectId: int('project_id').notNull(),
+	tourType: mysqlEnum('tour_type', ['interior', 'streetview']).notNull(),
+	// id stabil dipakai untuk referensi link antar node (mis. 'teras', 'gerbang')
+	nodeKey: varchar('node_key', { length: 60 }).notNull(),
+	name: varchar('name', { length: 120 }).notNull(),
+	imagePath: varchar('image_path', { length: 255 }).notNull(),
+	mapX: int('map_x').notNull().default(50), // posisi di denah skematik, 0-100
+	mapY: int('map_y').notNull().default(50),
+	// Arah pandang awal kamera 360° saat node ini dimuat (yaw, derajat 0-360).
+	// null = belum diatur -> viewer mulai dari horizon depan (yaw 0). Dipakai
+	// sebagai defaultYaw node di Photo Sphere Viewer (lihat VirtualTour.svelte).
+	initialYaw: int('initial_yaw'),
+	// JSON.stringify([{ to: 'nodeKey', yaw: 10 }, ...]) — jumlah link per node bervariasi
+	linksJson: text('links_json'),
+	markerTitle: varchar('marker_title', { length: 120 }),
+	markerDesc: varchar('marker_desc', { length: 500 }),
+	markerYaw: varchar('marker_yaw', { length: 20 }), // mis. '25deg'
+	markerPitch: varchar('marker_pitch', { length: 20 }), // mis. '-6deg'
 	sortOrder: int('sort_order').notNull().default(0),
 	isActive: tinyint('is_active').notNull().default(1),
 	createdAt,

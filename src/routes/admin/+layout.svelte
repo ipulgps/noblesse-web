@@ -11,6 +11,7 @@
 		{ href: '/admin', label: 'Dashboard' },
 		{ href: '/admin/projects', label: 'Proyek' },
 		{ href: '/admin/house-types', label: 'Tipe / Denah' },
+		{ href: '/admin/virtual-tour', label: 'Tur Virtual 360°' },
 		{ href: '/admin/gallery', label: 'Galeri' },
 		{ href: '/admin/facilities', label: 'Fasilitas' },
 		{ href: '/admin/locations', label: 'Lokasi' },

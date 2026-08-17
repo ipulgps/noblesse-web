@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -8,17 +9,30 @@
 	const blank = { id: 0, title: '', description: '', iconSvg: '', sortOrder: 0, isActive: 1 };
 	let editing = $state<typeof blank | null>(null);
 	let saving = $state(false);
+	let formCardEl: HTMLDivElement | undefined = $state();
 
-	const openCreate = () => (editing = { ...blank, sortOrder: data.facilities.length });
-	const openEdit = (f: Row) =>
-		(editing = {
+	// Form muncul di atas tabel; setelah dibuka, gulir ke sana supaya user tahu
+	// formnya terbuka (tidak perlu scroll manual ke atas).
+	async function scrollToForm() {
+		await tick();
+		formCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
+	const openCreate = () => {
+		editing = { ...blank, sortOrder: data.facilities.length };
+		scrollToForm();
+	};
+	const openEdit = (f: Row) => {
+		editing = {
 			id: f.id,
 			title: f.title,
 			description: f.description,
 			iconSvg: f.iconSvg ?? '',
 			sortOrder: f.sortOrder,
 			isActive: f.isActive
-		});
+		};
+		scrollToForm();
+	};
 </script>
 
 <svelte:head><title>Fasilitas — Noblesse Admin</title></svelte:head>
@@ -32,7 +46,7 @@
 </div>
 
 {#if editing}
-	<div class="adm-card" style="padding:28px;margin-bottom:24px;">
+	<div class="adm-card" style="padding:28px;margin-bottom:24px;scroll-margin-top:80px;" bind:this={formCardEl}>
 		<h2 style="font-family:'Playfair Display',serif;font-size:21px;color:#0a1f44;margin:0 0 20px;">
 			{editing.id ? 'Edit' : 'Tambah'} Fasilitas
 		</h2>

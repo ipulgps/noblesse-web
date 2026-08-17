@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
 	import ImageUpload from '$lib/ImageUpload.svelte';
 	import type { PageData, ActionData } from './$types';
 
@@ -9,36 +10,53 @@
 	const blank = {
 		id: 0,
 		name: '',
+		slug: '',
 		location: '',
 		priceLabel: '',
 		badge: '',
 		badgeStyle: 'gold' as 'gold' | 'dark',
 		imagePath: '',
 		description: '',
+		houseTypeId: null as number | null,
 		sortOrder: 0,
 		isActive: 1
 	};
 
+	const houseTypeName = (id: number | null) =>
+		data.houseTypes.find((h) => h.id === id)?.name ?? '—';
+
 	let editing = $state<typeof blank | null>(null);
 	let saving = $state(false);
 	let uploadingImg = $state(false);
+	let formCardEl: HTMLDivElement | undefined = $state();
+
+	// Form muncul di atas tabel; setelah dibuka, gulir ke sana supaya user tahu
+	// formnya terbuka (tidak perlu scroll manual ke atas).
+	async function scrollToForm() {
+		await tick();
+		formCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 
 	function openCreate() {
 		editing = { ...blank, sortOrder: data.projects.length };
+		scrollToForm();
 	}
 	function openEdit(p: Project) {
 		editing = {
 			id: p.id,
 			name: p.name,
+			slug: p.slug,
 			location: p.location,
 			priceLabel: p.priceLabel,
 			badge: p.badge ?? '',
 			badgeStyle: p.badgeStyle,
 			imagePath: p.imagePath ?? '',
 			description: p.description ?? '',
+			houseTypeId: p.houseTypeId,
 			sortOrder: p.sortOrder,
 			isActive: p.isActive
 		};
+		scrollToForm();
 	}
 	function close() {
 		editing = null;
@@ -58,7 +76,7 @@
 </div>
 
 {#if editing}
-	<div class="adm-card" style="padding:28px;margin-bottom:24px;">
+	<div class="adm-card" style="padding:28px;margin-bottom:24px;scroll-margin-top:80px;" bind:this={formCardEl}>
 		<h2 style="font-family:'Playfair Display',serif;font-size:21px;color:#0a1f44;margin:0 0 20px;">
 			{editing.id ? 'Edit Proyek' : 'Tambah Proyek'}
 		</h2>
@@ -83,6 +101,19 @@
 				<input id="p-name" name="name" required value={editing.name} />
 			</div>
 			<div class="adm-field">
+				<label for="p-slug">Slug URL *</label>
+				<input
+					id="p-slug"
+					name="slug"
+					required
+					placeholder="rajendra-hills"
+					pattern="[a-z0-9]+(-[a-z0-9]+)*"
+					title="Huruf kecil, angka, dan tanda hubung saja (mis. rajendra-hills)"
+					value={editing.slug}
+				/>
+				<small style="color:#7a8296;">Dipakai untuk URL publik tur virtual: /tur-virtual/{editing.slug || '...'}</small>
+			</div>
+			<div class="adm-field">
 				<label for="p-loc">Lokasi *</label>
 				<input id="p-loc" name="location" required value={editing.location} />
 			</div>
@@ -99,6 +130,15 @@
 				<select id="p-style" name="badgeStyle" value={editing.badgeStyle}>
 					<option value="gold">Emas</option>
 					<option value="dark">Gelap</option>
+				</select>
+			</div>
+			<div class="adm-field">
+				<label for="p-house-type">Desain Rumah</label>
+				<select id="p-house-type" name="houseTypeId" value={editing.houseTypeId ?? ''}>
+					<option value="">— Belum ditentukan —</option>
+					{#each data.houseTypes as h (h.id)}
+						<option value={h.id}>{h.name} (Tipe {h.typeCode})</option>
+					{/each}
 				</select>
 			</div>
 			<div class="adm-field">
@@ -148,6 +188,7 @@
 					<th>Lokasi</th>
 					<th>Harga</th>
 					<th>Badge</th>
+					<th>Desain</th>
 					<th>Status</th>
 					<th style="width:1%;">Aksi</th>
 				</tr>
@@ -162,10 +203,14 @@
 								<span class="adm-thumb"></span>
 							{/if}
 						</td>
-						<td style="font-weight:600;color:#0a1f44;">{p.name}</td>
+						<td>
+							<div style="font-weight:600;color:#0a1f44;">{p.name}</div>
+							<div style="font-size:12px;color:#9aa3b5;">/tur-virtual/{p.slug}</div>
+						</td>
 						<td>{p.location}</td>
 						<td>{p.priceLabel}</td>
 						<td>{p.badge ?? '—'}</td>
+						<td>{houseTypeName(p.houseTypeId)}</td>
 						<td>
 							<span class="adm-badge {p.isActive ? 'adm-badge-on' : 'adm-badge-off'}">
 								{p.isActive ? 'Aktif' : 'Nonaktif'}
