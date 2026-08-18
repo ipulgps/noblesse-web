@@ -238,6 +238,12 @@
 			if (m !== isMobile) {
 				isMobile = m;
 				if (!m) menuOpen = false;
+				// Beralih ke mobile: bersihkan style parallax yang mungkin masih nyangkut
+				// dari sesi desktop (mis. rotasi layar) supaya hero tak "terkunci" pudar.
+				if (m) {
+					if (heroBg) heroBg.style.transform = '';
+					if (heroContent) { heroContent.style.transform = ''; heroContent.style.opacity = ''; }
+				}
 			}
 		};
 		window.addEventListener('resize', onResize);
@@ -247,10 +253,16 @@
 			const y = window.pageYOffset || document.documentElement.scrollTop || 0;
 			scrolled = y > 40;
 			showBackToTop = y > 600;
-			if (heroBg && y < 1100) heroBg.style.transform = `translateY(${y * 0.22}px)`;
-			if (heroContent && y < 1000) {
-				heroContent.style.transform = `translateY(${y * 0.12}px)`;
-				heroContent.style.opacity = String(Math.max(0, 1 - y / 720));
+			// Parallax fade dimatikan di mobile — section hero jauh lebih pendek dalam
+			// piksel absolut di layar sempit, jadi opacity turun ke ~0 hanya dengan sedikit
+			// swipe, membuat panel model 3D & teks hero terlihat pudar/rusak padahal masih
+			// di dalam section hero (belum benar-benar di-scroll lewat).
+			if (!isMobile) {
+				if (heroBg && y < 1100) heroBg.style.transform = `translateY(${y * 0.22}px)`;
+				if (heroContent && y < 1000) {
+					heroContent.style.transform = `translateY(${y * 0.12}px)`;
+					heroContent.style.opacity = String(Math.max(0, 1 - y / 720));
+				}
 			}
 		};
 		window.addEventListener('scroll', onScroll, { passive: true });
