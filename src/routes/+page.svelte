@@ -601,15 +601,21 @@
 			</div>
 		</div>
 
-		<a
-			href="#stats"
-			style="position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;color:#8b97b3;"
-		>
-			<span style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;">Gulir</span>
-			<span style="position:relative;width:24px;height:40px;border:1px solid rgba(212,175,55,.5);border-radius:14px;display:block;">
-				<span style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:4px;height:8px;border-radius:3px;background:var(--nb-accent);animation:nbScrollCue 1.8s ease-in-out infinite;"></span>
-			</span>
-		</a>
+		{#if !isMobile}
+			<!-- Disembunyikan di mobile: di layar sempit heroContent stack vertikal dan
+			     panel model 3D jatuh ke bawah teks, jadi indikator ini (nempel ke bawah
+			     SECTION, bukan ke bawah konten) numpang tindih panel 3D. Scroll di HP
+			     sudah perilaku default/intuitif, jadi tak perlu indikator di sana. -->
+			<a
+				href="#stats"
+				style="position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;color:#8b97b3;"
+			>
+				<span style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;">Gulir</span>
+				<span style="position:relative;width:24px;height:40px;border:1px solid rgba(212,175,55,.5);border-radius:14px;display:block;">
+					<span style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:4px;height:8px;border-radius:3px;background:var(--nb-accent);animation:nbScrollCue 1.8s ease-in-out infinite;"></span>
+				</span>
+			</a>
+		{/if}
 	</section>
 
 	<!-- ================= STATS ================= -->
