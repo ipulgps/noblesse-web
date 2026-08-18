@@ -4,13 +4,14 @@ import { projects, virtualTourNodes } from '$lib/server/schema';
 import { asc, and, eq, inArray } from 'drizzle-orm';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { PageServerLoad } from './$types';
 
-// process.cwd() tidak selalu bisa diandalkan di dalam Vite dev/SSR module
-// graph — turunkan root project dari lokasi file ini (src/routes/.../+page.server.ts
-// -> naik 4 folder ke root), supaya path ke static/ selalu benar di dev maupun build.
-const projectRoot = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../../');
+// Bundler (Vite/Rollup) memindahkan file ini ke kedalaman folder berbeda di
+// build/server/chunks/... saat production build, jadi path relatif dari
+// import.meta.url (mis. '../../../../') salah arah setelah dibundel. PM2/adapter-node
+// menjalankan proses dari root project, jadi process.cwd() selalu benar — sama seperti
+// pola di 3d-test/+page.server.ts.
+const projectRoot = process.cwd();
 
 type Link = { to: string; yaw: number };
 
