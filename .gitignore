@@ -27,5 +27,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Upload admin (file user, bukan source code)
+/static
 /static/uploads/*
 !/static/uploads/.gitkeep
