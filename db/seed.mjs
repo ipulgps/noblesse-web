@@ -159,8 +159,13 @@ const settings = {
 	wa_display: '+62 813-5444-126',
 	instagram_url: 'https://instagram.com/noblesseproperty',
 	instagram_handle: '@noblesseproperty',
-	maps_url: 'https://www.google.com/maps',
-	location_marker_label: 'NOBLESSE GRAND AVENUE',
+	maps_url: 'https://maps.app.goo.gl/uhJagA24gvLh3rCC7',
+	// URL sematan (iframe) Google Maps — Perumahan Rajendra Hills, Kendari.
+	// Bentuk ?q=lat,lng&output=embed dipakai (bukan /maps/embed?pb=…) karena
+	// menampilkan pin tanpa kartu info putih yang menutupi peta.
+	// Ganti angka koordinatnya bila lokasi berubah; z=16 mengatur level zoom.
+	maps_embed_url: 'https://www.google.com/maps?q=-4.0155524,122.4869412&z=16&hl=id&output=embed',
+	location_marker_label: 'Rajendra Hills',
 	kpr_default_price: '500',
 	kpr_default_dp: '100',
 	kpr_default_tenor: '15',

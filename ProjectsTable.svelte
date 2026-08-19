@@ -14,7 +14,7 @@
   /* ───────────────── DATA ─────────────────
      Ganti array ini dengan data dari API/DB Anda (lihat onMount di bawah). */
   let projects = $state([
-    { id:1, name:'Noblesse Grand Avenue',   type:'Tipe 45 · 60 · 90', location:'Bandung Utara',  price:2800, units:240, sold:168, status:'Ready Stock'  },
+    // { id:1, name:'Noblesse Grand Avenue',   type:'Tipe 45 · 60 · 90', location:'Bandung Utara',  price:2800, units:240, sold:168, status:'Ready Stock'  },
     { id:2, name:'Noblesse Hills Residence', type:'Tipe 45 · 60',      location:'Sentul, Bogor',  price:1500, units:150, sold:92,  status:'Selling Fast' },
     { id:3, name:'Noblesse Signature',       type:'Tipe 90',           location:'BSD, Tangerang', price:4200, units:180, sold:84,  status:'New Launch'   },
     { id:4, name:'Noblesse Park Lavanya',    type:'Tipe 36 · 45',      location:'Cibubur, Depok', price:980,  units:320, sold:320, status:'Sold Out'     },

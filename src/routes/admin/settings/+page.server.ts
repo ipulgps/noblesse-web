@@ -14,7 +14,13 @@ const FIELDS: { key: string; label: string; type: 'text' | 'textarea' }[] = [
 	{ key: 'wa_display', label: 'WhatsApp (tampilan)', type: 'text' },
 	{ key: 'instagram_url', label: 'URL Instagram', type: 'text' },
 	{ key: 'instagram_handle', label: 'Handle Instagram', type: 'text' },
-	{ key: 'maps_url', label: 'URL Google Maps', type: 'text' },
+	{ key: 'maps_url', label: 'URL Google Maps (tombol "Lihat di Google Maps")', type: 'text' },
+	{
+		key: 'maps_embed_url',
+		label:
+			'URL Sematan Peta — Google Maps → Bagikan → Sematkan peta → salin isi src="…". Kosongkan untuk memakai ilustrasi peta.',
+		type: 'textarea'
+	},
 	{ key: 'location_marker_label', label: 'Label Penanda Peta', type: 'text' },
 	{ key: 'kpr_default_price', label: 'KPR — Harga default (juta)', type: 'text' },
 	{ key: 'kpr_default_dp', label: 'KPR — DP default (juta)', type: 'text' },

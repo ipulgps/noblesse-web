@@ -274,6 +274,26 @@ pm2 restart ecosystem.config.cjs    # atau: pm2 restart noblesse
 Jika ada perubahan skema DB, jalankan migrasinya sebelum restart
 (mis. `mysql -u noblesse -p noblesse < db/perubahan.sql`).
 
+> **Jangan jalankan `npm run db:seed` di server yang sudah jalan.** Perintah itu
+> menimpa seluruh `site_settings` (dan data awal lain) ke nilai default —
+> perubahan yang Anda buat lewat panel admin akan hilang. Seed hanya untuk
+> instalasi baru.
+
+### Bila update menambah pengaturan baru
+
+Tabel `site_settings` berbentuk key-value, jadi **tidak perlu migrasi skema**
+untuk pengaturan baru. Cukup buka **Admin → Pengaturan**, isi field yang masih
+kosong, lalu Simpan.
+
+Pengaturan yang perlu diisi setelah update terakhir:
+
+| Key | Isi |
+|---|---|
+| `maps_embed_url` | URL sematan peta lokasi. Contoh untuk Rajendra Hills:<br>`https://www.google.com/maps?q=-4.0155524,122.4869412&z=16&hl=id&output=embed` |
+
+Bila `maps_embed_url` dibiarkan kosong, section Lokasi menampilkan ilustrasi
+peta (bukan halaman rusak) — jadi aman bila belum sempat diisi.
+
 ---
 
 ## Checklist keamanan produksi (WAJIB)

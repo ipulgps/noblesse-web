@@ -312,6 +312,33 @@
 	const igUrl = $derived(s('instagram_url', 'https://instagram.com/noblesseproperty'));
 	const igHandle = $derived(s('instagram_handle', '{igHandle}'));
 
+	// Peta lokasi. maps_embed_url kosong → tampilkan ilustrasi peta saja.
+	// Hanya URL sematan Google Maps yang diterima agar setting ini tidak bisa
+	// dipakai menyematkan halaman sembarangan.
+	const markerLabel = $derived(s('location_marker_label', 'NOBLESSE GRAND AVENUE'));
+	const mapsEmbedUrl = $derived.by(() => {
+		let raw = s('maps_embed_url').trim();
+		if (!raw) return '';
+		// Terima juga bila admin menempel seluruh tag <iframe …> dari Google Maps:
+		// ambil isi atribut src-nya.
+		const tag = raw.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+		if (tag) raw = tag[1];
+		try {
+			const u = new URL(raw);
+			// Dua bentuk sematan resmi Google: /maps/embed?pb=… (menu "Sematkan
+			// peta") dan /maps?q=…&output=embed (berbasis koordinat, tanpa kartu
+			// info). Keduanya diterima; selain itu ditolak.
+			const ok =
+				u.protocol === 'https:' &&
+				/(^|\.)google\.com$/.test(u.hostname) &&
+				(u.pathname.startsWith('/maps/embed') ||
+					(u.pathname === '/maps' && u.searchParams.get('output') === 'embed'));
+			return ok ? u.href : '';
+		} catch {
+			return '';
+		}
+	});
+
 	const gallery = $derived(
 		data.gallery.map((g) => ({ height: `${g.heightPx}px`, caption: g.caption ?? 'Foto', src: g.imagePath }))
 	);
@@ -817,29 +844,50 @@
 				</div>
 			</div>
 			<div use:reveal={160} data-reveal-x="50" style="flex:1 1 380px;min-width:300px;">
-				<div style="position:relative;border-radius:2px;overflow:hidden;border:1px solid rgba(10,31,68,.1);box-shadow:0 24px 60px rgba(10,31,68,.14);background:#0A1F44;height:clamp(360px,46vh,500px);">
-					<div style="position:absolute;inset:0;background:radial-gradient(circle at 52% 46%, #11295a, #08152E 80%);"></div>
-					<div style="position:absolute;inset:0;opacity:.5;background-image:linear-gradient(rgba(212,175,55,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.12) 1px,transparent 1px);background-size:46px 46px;"></div>
-					<div style="position:absolute;top:0;bottom:0;left:30%;width:8px;background:rgba(212,175,55,.16);transform:skewX(-12deg);"></div>
-					<div style="position:absolute;left:0;right:0;top:58%;height:7px;background:rgba(212,175,55,.16);transform:skewY(4deg);"></div>
-					<div style="position:absolute;top:0;bottom:0;left:68%;width:4px;background:rgba(255,255,255,.06);"></div>
-					<span style="position:absolute;top:24%;left:20%;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.5;"></span>
-					<span style="position:absolute;top:72%;left:78%;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.5;"></span>
-					<span style="position:absolute;top:40%;left:80%;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.5;"></span>
-					<div style="position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);">
-						<span style="position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,.5);animation:nbPulse 2.4s ease-out infinite;"></span>
-						<span style="position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,.5);animation:nbPulse 2.4s ease-out infinite 1.2s;"></span>
-						<span style="position:relative;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));box-shadow:0 8px 24px rgba(212,175,55,.5);">
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="#08152E" style="transform:rotate(45deg);"><path d="M3 21V9l9-6 9 6v12h-6v-7H9v7H3Z" /></svg>
-						</span>
-					</div>
-					<div style="position:absolute;left:50%;top:calc(46% + 36px);transform:translateX(-50%);background:rgba(8,21,46,.85);border:1px solid rgba(212,175,55,.35);color:#fff;font-size:12px;letter-spacing:.1em;padding:6px 14px;border-radius:2px;white-space:nowrap;font-weight:600;">{s('location_marker_label', 'NOBLESSE GRAND AVENUE')}</div>
+				<div style="position:relative;border-radius:2px;overflow:hidden;border:1px solid rgba(212,175,55,.45);box-shadow:0 24px 60px rgba(10,31,68,.22);background:#0A1F44;height:clamp(360px,46vh,500px);">
+					{#if mapsEmbedUrl}
+						<iframe
+							src={mapsEmbedUrl}
+							title="Peta lokasi {markerLabel}"
+							loading="lazy"
+							referrerpolicy="no-referrer-when-downgrade"
+							style="position:absolute;inset:0;width:100%;height:100%;border:0;filter:saturate(.72) contrast(1.04);"
+						></iframe>
+						<!-- Selubung navy + vignette agar peta menyatu dengan palet halaman.
+						     pointer-events:none supaya peta tetap bisa digeser & di-zoom. -->
+						<div
+							aria-hidden="true"
+							style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(10,31,68,.2),rgba(10,31,68,.2)),radial-gradient(circle at 50% 46%,transparent 42%,rgba(8,21,46,.42) 100%);mix-blend-mode:multiply;"
+						></div>
+						<div
+							aria-hidden="true"
+							style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(212,175,55,.3);"
+						></div>
+					{:else}
+						<!-- Ilustrasi peta: dipakai bila maps_embed_url belum diisi di admin. -->
+						<div style="position:absolute;inset:0;background:radial-gradient(circle at 52% 46%, #11295a, #08152E 80%);"></div>
+						<div style="position:absolute;inset:0;opacity:.5;background-image:linear-gradient(rgba(212,175,55,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.12) 1px,transparent 1px);background-size:46px 46px;"></div>
+						<div style="position:absolute;top:0;bottom:0;left:30%;width:8px;background:rgba(212,175,55,.16);transform:skewX(-12deg);"></div>
+						<div style="position:absolute;left:0;right:0;top:58%;height:7px;background:rgba(212,175,55,.16);transform:skewY(4deg);"></div>
+						<div style="position:absolute;top:0;bottom:0;left:68%;width:4px;background:rgba(255,255,255,.06);"></div>
+						<span style="position:absolute;top:24%;left:20%;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.5;"></span>
+						<span style="position:absolute;top:72%;left:78%;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.5;"></span>
+						<span style="position:absolute;top:40%;left:80%;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.5;"></span>
+						<div style="position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);">
+							<span style="position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,.5);animation:nbPulse 2.4s ease-out infinite;"></span>
+							<span style="position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;background:rgba(212,175,55,.5);animation:nbPulse 2.4s ease-out infinite 1.2s;"></span>
+							<span style="position:relative;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,var(--nb-accent-l),var(--nb-accent));box-shadow:0 8px 24px rgba(212,175,55,.5);">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="#08152E" style="transform:rotate(45deg);"><path d="M3 21V9l9-6 9 6v12h-6v-7H9v7H3Z" /></svg>
+							</span>
+						</div>
+						<div style="position:absolute;left:50%;top:calc(46% + 36px);transform:translateX(-50%);background:rgba(8,21,46,.85);border:1px solid rgba(212,175,55,.35);color:#fff;font-size:12px;letter-spacing:.1em;padding:6px 14px;border-radius:2px;white-space:nowrap;font-weight:600;">{markerLabel}</div>
+					{/if}
 					<a
 						href={s('maps_url', 'https://www.google.com/maps')}
 						target="_blank"
 						rel="noopener"
 						class="map-link"
-						style="position:absolute;bottom:18px;right:18px;display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--nb-navy);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:11px 18px;border-radius:2px;transition:all .3s;"
+						style="position:absolute;bottom:18px;right:18px;z-index:2;display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--nb-navy);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:11px 18px;border-radius:2px;box-shadow:0 6px 20px rgba(8,21,46,.22);transition:all .3s;"
 						>Lihat di Google Maps →</a
 					>
 				</div>
