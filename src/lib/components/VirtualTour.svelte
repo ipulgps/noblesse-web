@@ -63,6 +63,7 @@
      houseName). Fitur AR (khusus <model-viewer>) sengaja tidak dibawa ke viewer baru. */
 
   let vrRootEl, streetRootEl;
+  let vrWrapEl, streetWrapEl;
   let vrViewer, vrTour, vrMarkersPlugin;
   let streetViewer, streetTour, streetMarkersPlugin;
   let vrLoading = false, streetLoading = false;
@@ -153,6 +154,15 @@
         ? 'bg-gradient-to-br from-[#E7C76A] to-[#D4AF37] text-[#08152E] shadow-[0_8px_24px_rgba(212,175,55,.35)]'
         : 'bg-transparent text-slate-400 hover:text-slate-100 hover:bg-white/[.04]');
   }
+  /* Tombol "Layar Penuh" tab VR/Streetview. Bukan absolute — ia anak dari kolom flex
+     kanan-atas bersama panel denah, sehingga otomatis jatuh di bawah panel tanpa
+     perlu menebak offset piksel (tinggi panel berbeda antara mode foto & SVG).
+     Gaya kaca gelap disamakan dengan tombol di viewer 3D. */
+  const fsBtnClass =
+    'inline-flex items-center gap-2 px-3 py-2 rounded-[3px] ' +
+    'border border-[#D4AF37]/40 bg-[#060e22]/80 backdrop-blur-md text-[#E7C76A] text-[12.5px] font-semibold ' +
+    'shadow-[0_8px_22px_rgba(0,0,0,.35)] hover:bg-[#060e22]/95 active:scale-[.96] transition-all cursor-pointer';
+
   function railClass(active) {
     return 'group shrink-0 relative px-4 py-2.5 rounded-[3px] border text-[12.5px] font-semibold whitespace-nowrap transition-all cursor-pointer ' +
       (active
@@ -333,7 +343,11 @@
       await new Promise(r => setTimeout(r, 30)); // beri waktu DOM commit sebelum ukur ukuran container
       const viewer = new Viewer({
         container: vrRootEl,
-        navbar: ['zoom', 'autorotate', 'gyroscope', 'fullscreen'],
+        // 'fullscreen' bawaan PSV DIHAPUS: ia mem-fullscreen-kan container PSV saja,
+        // sehingga panel denah / label node / hint (sibling di luar container) hilang
+        // dari layar. Diganti tombol kustom di pojok kanan atas yang mem-fullscreen-kan
+        // wrapper — lihat toggleWrapFullscreen().
+        navbar: ['zoom', 'autorotate', 'gyroscope'],
         rendererParameters: { preserveDrawingBuffer: true },
         plugins: [
           MarkersPlugin,
@@ -376,7 +390,11 @@
       await new Promise(r => setTimeout(r, 30));
       const viewer = new Viewer({
         container: streetRootEl,
-        navbar: ['zoom', 'autorotate', 'gyroscope', 'fullscreen'],
+        // 'fullscreen' bawaan PSV DIHAPUS: ia mem-fullscreen-kan container PSV saja,
+        // sehingga panel denah / label node / hint (sibling di luar container) hilang
+        // dari layar. Diganti tombol kustom di pojok kanan atas yang mem-fullscreen-kan
+        // wrapper — lihat toggleWrapFullscreen().
+        navbar: ['zoom', 'autorotate', 'gyroscope'],
         rendererParameters: { preserveDrawingBuffer: true },
         plugins: [
           MarkersPlugin,
@@ -407,6 +425,70 @@
     streetLoading = false;
   }
 
+  /* ──────────────── LAYAR PENUH (tab VR & Streetview) ────────────────
+     Yang di-fullscreen adalah WRAPPER tab (vrWrapEl/streetWrapEl), bukan container
+     PSV — supaya panel denah, label node, hint, dan kartu info marker ikut terbawa.
+     Tombol 'fullscreen' bawaan PSV sudah dihapus dari navbar karena hanya membawa
+     container-nya saja.
+
+     Sama seperti Model3DViewer: ada fallback CSS untuk iOS Safari yang tidak
+     mendukung requestFullscreen pada elemen non-video. PSV punya ResizeObserver
+     sendiri sehingga panorama otomatis menyesuaikan ukuran baru. */
+  let psvFs = $state(false);          // sedang layar penuh (tab VR/street mana pun)
+  let psvFsFallback = $state(false);  // memakai jalur CSS (iOS)
+
+  function wrapElFor(m) { return m === 'vr' ? vrWrapEl : streetWrapEl; }
+
+  async function toggleWrapFullscreen() {
+    if (psvFs) { await exitWrapFullscreen(); return; }
+    const el = wrapElFor(mode);
+    if (!el) return;
+
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) {
+      try {
+        await req.call(el);
+        return; // sukses → onPsvFsChange yang men-set psvFs
+      } catch (e) { /* ditolak → fallback CSS */ }
+    }
+    psvFsFallback = true;
+    psvFs = true;
+    document.body.style.overflow = 'hidden';
+    // Beri tahu PSV agar mengukur ulang container setelah wrapper berubah ukuran.
+    setTimeout(() => { try { (mode === 'vr' ? vrViewer : streetViewer)?.autoSize(); } catch (e) {} }, 60);
+  }
+
+  async function exitWrapFullscreen() {
+    if (psvFsFallback) {
+      psvFsFallback = false;
+      psvFs = false;
+      document.body.style.overflow = '';
+      setTimeout(() => { try { (mode === 'vr' ? vrViewer : streetViewer)?.autoSize(); } catch (e) {} }, 60);
+      return;
+    }
+    try {
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      if (ex && (document.fullscreenElement || document.webkitFullscreenElement)) await ex.call(document);
+    } catch (e) {}
+  }
+
+  // Sinkronkan state saat user keluar lewat Esc / gestur browser.
+  function onPsvFsChange() {
+    const el = document.fullscreenElement || document.webkitFullscreenElement;
+    psvFs = !!el && (el === vrWrapEl || el === streetWrapEl);
+  }
+
+  // Esc pada jalur fallback tidak ditangani browser (tak ada fullscreen natif aktif).
+  function onPsvFsKey(e) {
+    if (e.key === 'Escape' && psvFsFallback) exitWrapFullscreen();
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('fullscreenchange', onPsvFsChange);
+    document.addEventListener('webkitfullscreenchange', onPsvFsChange);
+    window.addEventListener('keydown', onPsvFsKey);
+  }
+
   function setMode3d() { mode = '3d'; }
   function setModeVr() { mode = 'vr'; setTimeout(initVR, 0); }
   function setModeStreet() { mode = 'street'; setTimeout(initStreet, 0); }
@@ -417,8 +499,28 @@
   onDestroy(() => {
     try { vrViewer?.destroy(); } catch (e) {}
     try { streetViewer?.destroy(); } catch (e) {}
+    // Lepas listener layar penuh & pulihkan scroll body — kalau komponen dilepas saat
+    // masih fullscreen (mis. navigasi keluar), halaman tak boleh tertinggal terkunci.
+    try {
+      document.removeEventListener('fullscreenchange', onPsvFsChange);
+      document.removeEventListener('webkitfullscreenchange', onPsvFsChange);
+      window.removeEventListener('keydown', onPsvFsKey);
+      if (psvFsFallback) document.body.style.overflow = '';
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      const cur = document.fullscreenElement || document.webkitFullscreenElement;
+      if (ex && cur && (cur === vrWrapEl || cur === streetWrapEl)) ex.call(document);
+    } catch (e) {}
   });
 </script>
+
+<!-- Ikon layar penuh (masuk/keluar) — dipakai tombol di tab VR & Streetview. -->
+{#snippet fsIcon(isOn)}
+  {#if isOn}
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+  {:else}
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+  {/if}
+{/snippet}
 
 <div class="w-full font-[Inter,sans-serif] text-white">
 
@@ -550,7 +652,11 @@
     </div>
 
     <!-- VR wrap -->
-    <div class={mode === 'vr' ? 'block absolute inset-0' : 'hidden'}>
+    <!-- bind:this={vrWrapEl} — TARGET layar penuh. Sengaja wrapper, bukan vrRootEl
+         (container PSV): overlay denah/label node/hint adalah sibling di luar
+         container, jadi kalau yang di-fullscreen container-nya saja, semua panel itu
+         hilang dari layar. Lihat toggleWrapFullscreen(). -->
+    <div bind:this={vrWrapEl} class={'psv-tab-wrap ' + (psvFsFallback && mode === 'vr' ? 'psv-fs-fallback ' : '') + (mode === 'vr' ? 'block absolute inset-0' : 'hidden')}>
       <div bind:this={vrRootEl} class="absolute inset-0 z-[1]"></div>
 
       <div class="absolute top-4 left-4 z-[5] pointer-events-none bg-[#060e22]/75 backdrop-blur-md border border-[#D4AF37]/25 px-4.5 py-3 rounded-[4px] shadow-[0_10px_28px_rgba(0,0,0,.35)]">
@@ -567,7 +673,12 @@
         <div class="absolute inset-0 z-[6] flex items-center justify-center text-center p-8 bg-[#060e22]/85 text-slate-200 text-[14.5px]">{vrError}</div>
       {/if}
 
-      <div class={'absolute top-4 right-4 z-[5] bg-[#060e22]/80 backdrop-blur-md border border-[#D4AF37]/25 rounded-[4px] p-2.5 shadow-[0_10px_28px_rgba(0,0,0,.35)] ' + (floorPlanImage ? 'w-[130px]' : 'w-[150px]')}>
+      <!-- Kolom kanan-atas: panel denah + tombol layar penuh ditumpuk vertikal.
+           Dijadikan satu flex-col (bukan dua elemen absolut dgn offset tebakan) supaya
+           tombol selalu jatuh persis di bawah panel, berapa pun tinggi panelnya —
+           tinggi panel berbeda antara mode foto denah & SVG skematik. -->
+      <div class={'absolute top-4 right-4 z-[5] flex flex-col items-end gap-2 ' + (floorPlanImage ? 'w-[130px]' : 'w-[150px]')}>
+      <div class={'w-full bg-[#060e22]/80 backdrop-blur-md border border-[#D4AF37]/25 rounded-[4px] p-2.5 shadow-[0_10px_28px_rgba(0,0,0,.35)]'}>
         <div class="font-[Cinzel,serif] text-[8.5px] tracking-[.2em] text-[#D4AF37] mb-2">DENAH SKEMATIK</div>
         <div
           class={'relative w-full rounded-[2px] overflow-hidden ' + (floorPlanImage ? 'h-[198px] bg-white' : 'h-[110px]')}
@@ -584,6 +695,14 @@
         </div>
       </div>
 
+        {#if vrInited && !vrError}
+          <button onclick={toggleWrapFullscreen} class={fsBtnClass} title={psvFs ? 'Keluar layar penuh' : 'Layar penuh'} aria-label={psvFs ? 'Keluar layar penuh' : 'Layar penuh'}>
+            {@render fsIcon(psvFs)}
+            <span class="hidden sm:inline">{psvFs ? 'Keluar' : 'Layar Penuh'}</span>
+          </button>
+        {/if}
+      </div>
+
       {#if vrMarker}
         <div class="absolute left-4 right-4 bottom-4 z-[6] bg-[#060e22]/95 backdrop-blur-md border border-[#D4AF37]/40 rounded-[4px] px-4.5 py-3.5 shadow-[0_-10px_30px_rgba(0,0,0,.35)]">
           <div class="flex justify-between items-start gap-3">
@@ -598,7 +717,7 @@
     </div>
 
     <!-- Street wrap -->
-    <div class={mode === 'street' ? 'block absolute inset-0' : 'hidden'}>
+    <div bind:this={streetWrapEl} class={'psv-tab-wrap ' + (psvFsFallback && mode === 'street' ? 'psv-fs-fallback ' : '') + (mode === 'street' ? 'block absolute inset-0' : 'hidden')}>
       <div bind:this={streetRootEl} class="absolute inset-0 z-[1]"></div>
 
       <div class="absolute top-4 left-4 z-[5] pointer-events-none bg-[#060e22]/75 backdrop-blur-md border border-[#D4AF37]/25 px-4.5 py-3 rounded-[4px] shadow-[0_10px_28px_rgba(0,0,0,.35)]">
@@ -615,16 +734,26 @@
         <div class="absolute inset-0 z-[6] flex items-center justify-center text-center p-8 bg-[#060e22]/85 text-slate-200 text-[14.5px]">{streetError}</div>
       {/if}
 
-      <div class="absolute top-4 right-4 z-[5] w-[150px] bg-[#060e22]/80 backdrop-blur-md border border-[#D4AF37]/25 rounded-[4px] p-2.5 shadow-[0_10px_28px_rgba(0,0,0,.35)]">
-        <div class="font-[Cinzel,serif] text-[8.5px] tracking-[.2em] text-[#D4AF37] mb-2">JALUR MENUJU RUMAH</div>
-        <div class="relative w-full h-[110px]">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full">
-            <polyline points={streetMapPath} fill="none" stroke="rgba(212,175,55,.35)" stroke-width="1.2"></polyline>
-          </svg>
-          {#each streetNodes as n (n.id)}
-            <span class={dotClass(n.id === streetNodeId)} style={dotPos(n)}></span>
-          {/each}
+      <!-- Kolom kanan-atas: panel jalur + tombol layar penuh (lihat catatan di tab VR). -->
+      <div class="absolute top-4 right-4 z-[5] w-[150px] flex flex-col items-end gap-2">
+        <div class="w-full bg-[#060e22]/80 backdrop-blur-md border border-[#D4AF37]/25 rounded-[4px] p-2.5 shadow-[0_10px_28px_rgba(0,0,0,.35)]">
+          <div class="font-[Cinzel,serif] text-[8.5px] tracking-[.2em] text-[#D4AF37] mb-2">JALUR MENUJU RUMAH</div>
+          <div class="relative w-full h-[110px]">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full">
+              <polyline points={streetMapPath} fill="none" stroke="rgba(212,175,55,.35)" stroke-width="1.2"></polyline>
+            </svg>
+            {#each streetNodes as n (n.id)}
+              <span class={dotClass(n.id === streetNodeId)} style={dotPos(n)}></span>
+            {/each}
+          </div>
         </div>
+
+        {#if streetInited && !streetError}
+          <button onclick={toggleWrapFullscreen} class={fsBtnClass} title={psvFs ? 'Keluar layar penuh' : 'Layar penuh'} aria-label={psvFs ? 'Keluar layar penuh' : 'Layar penuh'}>
+            {@render fsIcon(psvFs)}
+            <span class="hidden sm:inline">{psvFs ? 'Keluar' : 'Layar Penuh'}</span>
+          </button>
+        {/if}
       </div>
 
       {#if streetMarker}
@@ -665,3 +794,32 @@
   {/if}
 
 </div>
+
+<style>
+  /* ── LAYAR PENUH tab VR / Streetview ──
+     Wrapper tab bergaya `absolute inset-0` (mengisi panel viewer). Saat ia menjadi
+     elemen fullscreen, ia lepas dari induk ber-`position:relative` sehingga inset-0
+     tak lagi punya acuan — tanpa aturan ini ukurannya bisa kolaps. Dipaksa mengisi
+     viewport. 100dvh dipakai agar bilah alamat Safari yang muncul-hilang tak memotong.
+
+     :global dipakai karena elemen target ditulis dengan kelas Tailwind (bukan kelas
+     lokal), jadi tak ada selektor lokal yang bisa disematkan Svelte. */
+  :global(.psv-tab-wrap:fullscreen),
+  :global(.psv-tab-wrap:-webkit-full-screen) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: #060e22;
+  }
+
+  /* Fallback iOS Safari (tak ada Fullscreen API untuk elemen non-video). */
+  :global(.psv-tab-wrap.psv-fs-fallback) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 9999;
+    background: #060e22;
+  }
+</style>

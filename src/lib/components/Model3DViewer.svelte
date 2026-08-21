@@ -68,6 +68,22 @@
        · pinch 2 jari    → zoom FOV (menggantikan scroll wheel)
      isTouch dievaluasi di browser saja (SSR-safe: dicek saat onMount). */
   let isTouch = $state(false);
+
+  /* ── Mode LAYAR PENUH ──
+     Dua jalur, karena Fullscreen API tidak universal:
+       1. NATIF — el.requestFullscreen() pada .model3d-wrap. Didukung desktop & Android;
+          browser menyembunyikan UI-nya sendiri, jadi paling ideal.
+       2. FALLBACK CSS — iOS Safari TIDAK mendukung requestFullscreen untuk elemen biasa
+          (hanya <video>). Di sana kita "palsukan": position:fixed inset:0 z-index tinggi
+          + kunci scroll <body>. Hasil visualnya sama dari sudut pandang pengguna.
+     ResizeObserver yang sudah ada otomatis menyesuaikan kamera & renderer saat wrap
+     berubah ukuran — jadi tak perlu penanganan resize khusus di sini. */
+  let isFs = $state(false);        // sedang layar penuh (jalur mana pun)
+  let fsFallback = $state(false);  // true = memakai jalur CSS (iOS)
+  let fsSupported = $state(true);  // ada requestFullscreen? (dicek saat onMount)
+  let fsPlaceholder = null;        // komentar penanda posisi asal wrap di DOM
+  let fsHomeParent = null;         // induk asli wrap (untuk dikembalikan saat keluar)
+
   let joyActive = $state(false);   // joystick sedang disentuh
   let joyVec = { x: 0, y: 0 };     // arah joystick ternormalisasi (-1..1)
   let joyKnob = $state({ x: 0, y: 0 }); // posisi knob utk tampilan (px)
@@ -83,6 +99,11 @@
     isTouch = window.matchMedia?.('(pointer: coarse)')?.matches
       || 'ontouchstart' in window
       || navigator.maxTouchPoints > 0;
+    // Dukungan Fullscreen API (iOS Safari: tak ada untuk elemen non-video → fallback CSS).
+    fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    window.addEventListener('keydown', onFsKey);
     if (!glbSrc) { loading = false; errorMsg = 'Model 3D belum tersedia.'; return; }
     init();
     return () => cleanup();
@@ -749,8 +770,99 @@
     else enterInside();
   }
 
+  /* ── LAYAR PENUH ───────────────────────────────────────────────
+     toggleFullscreen(): masuk/keluar. Jalur natif dipakai bila tersedia; kalau
+     requestFullscreen ditolak (mis. Safari macOS pada iframe tanpa allow="fullscreen")
+     kita jatuh ke jalur CSS supaya tombol tak pernah "mati" tanpa efek. */
+  async function toggleFullscreen() {
+    if (isFs) { await exitFullscreen(); return; }
+    if (!canvasWrap) return;
+
+    if (fsSupported) {
+      const req = canvasWrap.requestFullscreen || canvasWrap.webkitRequestFullscreen;
+      if (req) {
+        try {
+          await req.call(canvasWrap);
+          return; // sukses → onFsChange yang men-set isFs
+        } catch (e) { /* ditolak → lanjut ke fallback CSS di bawah */ }
+      }
+    }
+    enterCssFullscreen();
+  }
+
+  function enterCssFullscreen() {
+    // position:fixed TIDAK relatif viewport bila ada ancestor ber-transform/filter —
+    // dan di hero homepage memang ada (.reveal memakai translateY, tetap membentuk
+    // containing block walau nilainya 0). Kalau dibiarkan, wrap terperangkap di dalam
+    // kartu hero, bukan menutupi layar. Solusinya: pindahkan wrap ke <body> selama
+    // layar penuh, lalu kembalikan persis ke tempat semula saat keluar. Placeholder
+    // menandai posisi asal agar urutan DOM tak berubah.
+    if (canvasWrap && canvasWrap.parentNode !== document.body) {
+      fsPlaceholder = document.createComment('model3d-fs');
+      fsHomeParent = canvasWrap.parentNode;
+      fsHomeParent.insertBefore(fsPlaceholder, canvasWrap);
+      document.body.appendChild(canvasWrap);
+    }
+    fsFallback = true;
+    isFs = true;
+    // Kunci scroll halaman di belakang agar tak "bocor" saat menyeret model.
+    document.body.style.overflow = 'hidden';
+  }
+
+  async function exitFullscreen() {
+    if (fsFallback) {
+      fsFallback = false;
+      isFs = false;
+      document.body.style.overflow = '';
+      // Kembalikan wrap ke induk aslinya.
+      if (fsPlaceholder && fsHomeParent && canvasWrap) {
+        fsHomeParent.insertBefore(canvasWrap, fsPlaceholder);
+        fsPlaceholder.remove();
+      }
+      fsPlaceholder = fsHomeParent = null;
+      return;
+    }
+    try {
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      if (ex && (document.fullscreenElement || document.webkitFullscreenElement)) await ex.call(document);
+    } catch (e) {}
+  }
+
+  // Sinkronkan state saat user keluar lewat tombol Esc / gestur browser (bukan tombol kita).
+  function onFsChange() {
+    const el = document.fullscreenElement || document.webkitFullscreenElement;
+    isFs = !!el && el === canvasWrap;
+  }
+
+  // Esc di jalur fallback CSS tidak ditangani browser (tak ada fullscreen natif aktif),
+  // jadi kita tangani sendiri. Di mode telusuri, Esc sudah dipakai untuk keluar
+  // pointer-lock — biarkan itu yang menang, jangan sekaligus keluar layar penuh.
+  function onFsKey(e) {
+    if (e.key === 'Escape' && fsFallback && !inside) exitFullscreen();
+  }
+
   function cleanup() {
     disposed = true;
+    // Jangan tinggalkan halaman dalam keadaan terkunci / masih fullscreen saat komponen
+    // dilepas (mis. user pindah tab tur atau navigasi ke halaman lain).
+    try {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      document.removeEventListener('webkitfullscreenchange', onFsChange);
+      window.removeEventListener('keydown', onFsKey);
+      if (fsFallback) {
+        document.body.style.overflow = '';
+        // Kembalikan wrap ke induk aslinya supaya Svelte melepasnya dari DOM dengan
+        // benar (kalau ditinggal di <body>, node akan tertinggal sebagai sampah).
+        if (fsPlaceholder && fsHomeParent && canvasWrap) {
+          fsHomeParent.insertBefore(canvasWrap, fsPlaceholder);
+          fsPlaceholder.remove();
+        }
+        fsPlaceholder = fsHomeParent = null;
+      }
+      const ex = document.exitFullscreen || document.webkitExitFullscreen;
+      const cur = document.fullscreenElement || document.webkitFullscreenElement;
+      if (ex && cur && cur === canvasWrap) ex.call(document);
+    } catch (e) {}
     if (rafId) cancelAnimationFrame(rafId);
     try { resizeObs?.disconnect(); } catch (e) {}
     try { controls?.dispose(); } catch (e) {}
@@ -781,7 +893,7 @@
   }
 </script>
 
-<div bind:this={canvasWrap} class="model3d-wrap">
+<div bind:this={canvasWrap} class="model3d-wrap" class:fs-fallback={fsFallback}>
   {#if loading}
     <div class="model3d-overlay">
       <div class="model3d-spinner" aria-hidden="true"></div>
@@ -794,17 +906,37 @@
     </div>
   {/if}
 
-  <!-- Tombol Masuk / Keluar walkthrough interior (disembunyikan di mode compact) -->
-  {#if canGoInside && !loading && !errorMsg && !compact}
-    <button class="model3d-enter" onclick={toggleInside}>
-      {#if inside}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
-        Keluar ke Luar
-      {:else}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
-        Masuk ke Dalam
+  <!-- Bar tombol kanan-atas: Layar Penuh + Masuk/Keluar walkthrough.
+       Layar penuh tampil juga di mode compact (di hero berguna untuk melihat rumah
+       lebih besar); tombol walkthrough tetap disembunyikan di sana seperti semula. -->
+  {#if !loading && !errorMsg}
+    <div class="model3d-actions">
+      {#if canGoInside && !compact}
+        <button class="model3d-btn model3d-btn--gold" onclick={toggleInside}>
+          {#if inside}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+            Keluar ke Luar
+          {:else}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
+            Masuk ke Dalam
+          {/if}
+        </button>
       {/if}
-    </button>
+
+      <button
+        class="model3d-btn model3d-btn--ghost"
+        onclick={toggleFullscreen}
+        title={isFs ? 'Keluar layar penuh' : 'Layar penuh'}
+        aria-label={isFs ? 'Keluar layar penuh' : 'Layar penuh'}
+      >
+        {#if isFs}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+        {:else}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        {/if}
+        <span class="model3d-btn-label">{isFs ? 'Keluar' : 'Layar Penuh'}</span>
+      </button>
+    </div>
   {/if}
 
   <!-- Joystick virtual (hanya perangkat sentuh, saat mode telusuri) -->
@@ -881,28 +1013,69 @@
     to { transform: rotate(360deg); }
   }
 
-  .model3d-enter {
+  /* Jalur fallback layar penuh (iOS Safari): tak ada fullscreen natif untuk elemen
+     biasa, jadi wrap dinaikkan menutupi viewport. 100dvh (bukan 100vh) agar bilah
+     alamat Safari yang muncul-hilang tidak memotong bagian bawah canvas. */
+  .model3d-wrap.fs-fallback {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 9999;
+    border-radius: 0;
+  }
+
+  /* Bar tombol kanan-atas. Saat layar penuh natif, wrap menjadi elemen fullscreen
+     sehingga offset absolute-nya tetap benar tanpa penyesuaian. */
+  .model3d-actions {
     position: absolute;
     top: 16px;
     right: 16px;
     z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .model3d-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(135deg, #e7c76a, #d4af37);
-    color: #08152e;
     font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.02em;
     padding: 9px 16px;
-    border: none;
     border-radius: 3px;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4);
-    transition: filter 0.15s, transform 0.1s;
+    transition: filter 0.15s, transform 0.1s, background 0.15s;
   }
-  .model3d-enter:hover { filter: brightness(1.1); }
-  .model3d-enter:active { transform: scale(0.96); }
+  .model3d-btn:active { transform: scale(0.96); }
+
+  .model3d-btn--gold {
+    background: linear-gradient(135deg, #e7c76a, #d4af37);
+    color: #08152e;
+    border: none;
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4);
+  }
+  .model3d-btn--gold:hover { filter: brightness(1.1); }
+
+  /* Tombol layar penuh dibuat sekunder (kaca gelap) supaya "Masuk ke Dalam" tetap
+     menjadi aksi utama yang menonjol. */
+  .model3d-btn--ghost {
+    background: rgba(6, 14, 34, 0.72);
+    color: #e7c76a;
+    border: 1px solid rgba(231, 199, 106, 0.42);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  }
+  .model3d-btn--ghost:hover { background: rgba(6, 14, 34, 0.9); }
+
+  /* Di layar sempit label teksnya disembunyikan → tombol jadi ikon saja, agar bar
+     tombol tak berdesakan dengan "Masuk ke Dalam". */
+  @media (max-width: 560px) {
+    .model3d-btn--ghost { padding: 9px 11px; }
+    .model3d-btn-label { display: none; }
+  }
 
   .model3d-walkhint {
     position: absolute;
