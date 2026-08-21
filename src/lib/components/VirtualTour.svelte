@@ -351,7 +351,10 @@
         rendererParameters: { preserveDrawingBuffer: true },
         plugins: [
           MarkersPlugin,
-          AutorotatePlugin,
+          // autostartDelay: null → panorama TIDAK berputar sendiri saat idle.
+          // Plugin tetap dipasang agar tombol 'autorotate' di navbar berfungsi
+          // bila user ingin menyalakannya manual.
+          AutorotatePlugin.withConfig({ autostartDelay: null }),
           GyroscopePlugin,
           VirtualTourPlugin.withConfig({
             positionMode: 'manual',
@@ -398,7 +401,8 @@
         rendererParameters: { preserveDrawingBuffer: true },
         plugins: [
           MarkersPlugin,
-          AutorotatePlugin,
+          // Sama seperti tab VR: tanpa putaran otomatis, tombol navbar tetap aktif.
+          AutorotatePlugin.withConfig({ autostartDelay: null }),
           GyroscopePlugin,
           VirtualTourPlugin.withConfig({
             positionMode: 'manual',
